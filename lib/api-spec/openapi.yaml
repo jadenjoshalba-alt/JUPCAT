@@ -1,0 +1,266 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: questions
+    description: Question generation
+  - name: sessions
+    description: Test sessions
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /questions/generate:
+    post:
+      operationId: generateQuestions
+      tags: [questions]
+      summary: Generate UPCAT questions using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionGenerateInput"
+      responses:
+        "200":
+          description: Generated questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sessions:
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Save a completed test session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionInput"
+      responses:
+        "201":
+          description: Session saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      operationId: listSessions
+      tags: [sessions]
+      summary: List all saved sessions
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+
+  /sessions/{id}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      summary: Get a specific session with full details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    Question:
+      type: object
+      required: [id, subject, text, choices, correctAnswer, explanation]
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+          enum:
+            - language_english
+            - language_filipino
+            - math
+            - science
+            - reading_english
+            - reading_filipino
+        text:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Choice"
+        correctAnswer:
+          type: string
+        explanation:
+          type: string
+
+    Choice:
+      type: object
+      required: [id, text]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+
+    QuestionGenerateInput:
+      type: object
+      required: [subjects]
+      properties:
+        subjects:
+          type: array
+          items:
+            type: object
+            required: [subject, count]
+            properties:
+              subject:
+                type: string
+                enum:
+                  - language_english
+                  - language_filipino
+                  - math
+                  - science
+                  - reading_english
+                  - reading_filipino
+              count:
+                type: integer
+                minimum: 1
+                maximum: 100
+              topics:
+                type: array
+                items:
+                  type: string
+
+    SessionAnswer:
+      type: object
+      required: [questionId, subject, selectedAnswer, correctAnswer, isCorrect, isBlank]
+      properties:
+        questionId:
+          type: string
+        subject:
+          type: string
+        questionText:
+          type: string
+        selectedAnswer:
+          type: ["string", "null"]
+        correctAnswer:
+          type: string
+        isCorrect:
+          type: boolean
+        isBlank:
+          type: boolean
+        explanation:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Choice"
+
+    SessionInput:
+      type: object
+      required: [answers, totalScore, totalQuestions, timeTakenSeconds]
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionAnswer"
+        totalScore:
+          type: number
+        totalQuestions:
+          type: integer
+        timeTakenSeconds:
+          type: integer
+
+    Session:
+      type: object
+      required: [id, answers, totalScore, totalQuestions, timeTakenSeconds, createdAt]
+      properties:
+        id:
+          type: integer
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionAnswer"
+        totalScore:
+          type: number
+        totalQuestions:
+          type: integer
+        timeTakenSeconds:
+          type: integer
+        createdAt:
+          type: string
