@@ -11,40 +11,28 @@ import { SUBJECT_LABELS } from "@/lib/format";
 import { Loader2, ArrowLeft, CheckCircle2, XCircle, MinusCircle, Lightbulb, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Permanent fix helper for subfolder asset pathways
-const fixImagePath = (url: string | undefined): string | undefined => {
+const fixImagePath = (url: string | undefined) => {
   if (!url) return undefined;
-  if (url.startsWith("/")) {
-    return `.${url}`;
-  }
-  return url;
+  return url.startsWith("/") ? `.${url}` : url;
 };
 
 export default function ReviewPage() {
   const [, params] = useRoute("/review/:sessionId");
   const sessionId = params?.sessionId ?? "";
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
-
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    if (!sessionId || authLoading) return;
-    if (!user) return;
-
+    if (!sessionId || authLoading || !user) return;
     setIsLoading(true);
-    setIsError(false);
     getSession(user.uid, sessionId)
-      .then((data) => {
-        if (!data) setIsError(true);
-        else setSession(data);
-      })
-      .catch(() => setIsError(true))
+      .then((data) => setSession(data))
+      .catch(() => {})
       .finally(() => setIsLoading(false));
   }, [sessionId, user, authLoading]);
 
-  if (authLoading) {
+  if (authLoading || isLoading) {
     return (
       <Layout>
         <div className="flex-1 flex items-center justify-center">
@@ -54,46 +42,13 @@ export default function ReviewPage() {
     );
   }
 
-  if (!user) {
+  if (!user || !session) {
     return (
       <Layout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Sign in required</h2>
-            <p className="text-muted-foreground">Please sign in to view your review session.</p>
-            <Button onClick={signInWithGoogle} className="gap-2">
-              <LogIn className="h-4 w-4" />
-              Sign in with Google
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p>Loading session data...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (isError || !session) {
-    return (
-      <Layout>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">Session not found</h2>
-            <p className="text-muted-foreground">The requested review session could not be loaded.</p>
-            <Button asChild>
-              <Link href="/">Back to Dashboard</Link>
-            </Button>
+        <div className="flex-1 flex items-center justify-center p-4 text-center">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Session or Auth Missing</h2>
+            <Button onClick={signInWithGoogle}>Sign In / Return Home</Button>
           </div>
         </div>
       </Layout>
@@ -105,48 +60,79 @@ export default function ReviewPage() {
       <div className="max-w-4xl mx-auto w-full space-y-8 pb-12">
         <div className="flex items-center gap-4 border-b pb-6">
           <Button variant="ghost" size="icon" asChild className="rounded-full">
-            <Link href="/">
-              <ArrowLeft className="h-5 w-5" />
-              <span className="sr-only">Back</span>
-            </Link>
+            <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Review Answers</h1>
-            <p className="text-muted-foreground mt-1">
-              Score: <span className="font-semibold text-foreground">{session.totalScore}</span> / {session.totalQuestions}
-            </p>
+            <h1 className="text-3xl font-bold">Review Answers</h1>
+            <p className="text-muted-foreground mt-1">Score: {session.totalScore} / {session.totalQuestions}</p>
           </div>
         </div>
 
         <div className="space-y-12">
           {session.answers.map((answer, index) => {
             const choices = answer.choices || [];
-
             return (
               <Card key={answer.questionId} className="overflow-hidden border-2 shadow-sm">
                 <div className="bg-muted/30 px-6 py-3 border-b flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-muted-foreground">#{index + 1}</span>
-                    <Badge variant="outline" className="bg-background">
-                      {SUBJECT_LABELS[answer.subject] || answer.subject}
-                    </Badge>
+                    <Badge variant="outline">{SUBJECT_LABELS[answer.subject] || answer.subject}</Badge>
                   </div>
-                  <div className="flex items-center">
-                    {answer.isCorrect ? (
-                      <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Correct
-                      </Badge>
-                    ) : answer.isBlank ? (
-                      <Badge variant="secondary" className="bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300">
-                        <MinusCircle className="h-3.5 w-3.5 mr-1" /> Blank
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800">
-                        <XCircle className="h-3.5 w-3.5 mr-1" /> Incorrect
-                      </Badge>
-                    )}
-                  </div>
+                  <Badge variant={answer.isCorrect ? "default" : "destructive"}>
+                    {answer.isCorrect ? "Correct" : "Incorrect"}
+                  </Badge>
                 </div>
 
-                <CardContent className="p-6 space-y-8">
-                  <div className="prose prose-slate dark:prose-invert max-w-none text
+                <CardContent className="p-6 space-y-6">
+                  <div className="prose max-w-none text-lg whitespace-pre-wrap">{answer.questionText}</div>
+
+                  {answer.imageUrl && (
+                    <div className="rounded-lg border overflow-hidden flex justify-center bg-white p-2">
+                      <img src={fixImagePath(answer.imageUrl)} alt="Diagram" className="max-h-[350px] object-contain" />
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {choices.map((choice, i) => {
+                      const isSelected = answer.selectedAnswer === choice.id;
+                      const isCorrectChoice = choice.id === answer.correctAnswer;
+                      const label = String.fromCharCode(65 + i);
+
+                      return (
+                        <div key={choice.id} className={cn(
+                          "border p-4 rounded-xl transition-all w-full",
+                          isSelected && isCorrectChoice && "bg-green-50 border-green-200 dark:bg-green-950/20",
+                          isSelected && !isCorrectChoice && "bg-red-50 border-red-200 dark:bg-red-950/20",
+                          !isSelected && isCorrectChoice && "bg-green-50/30 border-green-200 border-dashed",
+                          !isSelected && !isCorrectChoice && "opacity-70 bg-card"
+                        )}>
+                          <div className="flex items-start w-full gap-2">
+                            <span className="font-bold text-muted-foreground">{label}.</span>
+                            <span className="flex-1">{choice.text}</span>
+                          </div>
+
+                          {choice.imageUrl && (
+                            <div className="mt-3 ml-6 p-1 bg-white border rounded max-w-[240px]">
+                              <img src={fixImagePath(choice.imageUrl)} alt="Choice visual" className="max-h-32 object-contain" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {answer.explanation && (
+                    <div className="bg-primary/5 border rounded-lg p-4 mt-4">
+                      <div className="flex items-center gap-2 mb-1 text-primary font-semibold"><Lightbulb className="h-4 w-4"/>Explanation</div>
+                      <p className="text-sm text-muted-foreground">{answer.explanation}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </Layout>
+  );
+}
