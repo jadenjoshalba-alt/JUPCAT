@@ -62,10 +62,12 @@ function extractExtensionFromUrl(url: string): string {
  */
 function cleanGoogleSearchUrl(url: string): string {
   if (!url) return "";
+  // Check if it's a Google search URL wrapping another URL
   if (url.includes("google.com/search?q=")) {
     const qIndex = url.indexOf("q=");
     if (qIndex !== -1) {
       const rawQuery = url.slice(qIndex + 2);
+      // URL-decode the query
       const decoded = decodeURIComponent(rawQuery.split("&")[0]);
       if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
         return decoded;
@@ -75,18 +77,9 @@ function cleanGoogleSearchUrl(url: string): string {
   return url;
 }
 
-const BROWSER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
 async function downloadImage(url: string, filepath: string): Promise<boolean> {
   try {
-    const response = await fetch(url, {
-      redirect: "follow",
-      headers: {
-        "User-Agent": BROWSER_USER_AGENT,
-        "Accept": "image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    });
+    const response = await fetch(url, { redirect: "follow" });
     if (!response.ok) return false;
 
     const contentType = response.headers.get("content-type") || "";
@@ -139,40 +132,7 @@ router.post("/images/upload", upload.single("image"), (req, res) => {
   });
 });
 
-// ── Save image from browser (client-side fetch bypass) ──
-// The browser fetches the image first (which bypasses server-side IP blocking),
-// then sends the raw bytes to the server for saving.
-router.post("/images/save", upload.single("image"), (req, res) => {
-  const { filename } = req.body as { filename?: string };
-  if (!req.file) {
-    res.status(400).json({ error: "No image file provided" });
-    return;
-  }
-  if (!filename || filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
-    res.status(400).json({ error: "Invalid filename" });
-    return;
-  }
-  // Rename to the requested filename
-  const ext = path.extname(req.file.filename) || path.extname(filename) || ".png";
-  const safeName = sanitizeFilename(filename.replace(/\.[^.]+$/, ""));
-  const finalName = `${safeName}${ext}`;
-  const finalPath = path.join(IMAGES_DIR, finalName);
-
-  if (fs.existsSync(finalPath)) {
-    fs.unlinkSync(finalPath);
-  }
-  fs.renameSync(req.file.path, finalPath);
-
-  res.json({
-    filename: finalName,
-    relativePath: `images/${finalName}`,
-    importStatement: `import ${finalName
-      .replace(/\.[^.]+$/, "")
-      .replace(/[^a-zA-Z0-9]/g, "_")} from "@/assets/${finalName}";`,
-  });
-});
-
-// ── Download single image from URL (server-side fallback) ──
+// ── Download single image from URL ──
 router.post("/images/download", async (req, res) => {
   const { url } = req.body as { url?: string };
   if (!url) {
@@ -193,10 +153,7 @@ router.post("/images/download", async (req, res) => {
 
   const success = await downloadImage(cleanUrl, filepath);
   if (!success) {
-    res.status(400).json({
-      error: "Failed to download image. This may be due to server-side blocking. Try the browser download method.",
-      url: cleanUrl,
-    });
+    res.status(400).json({ error: "Failed to download image. URL may not be a direct image link." });
     return;
   }
 
@@ -209,11 +166,11 @@ router.post("/images/download", async (req, res) => {
   });
 });
 
-// ── Bulk download images with custom names (server-side fallback) ──
+// ── Bulk download images with custom names ──
 router.post("/images/bulk-download", async (req, res) => {
   const { mapping } = req.body as { mapping?: Record<string, string> };
   if (!mapping || typeof mapping !== "object" || Object.keys(mapping).length === 0) {
-    res.status(400).json({ error: "Mapping is required" });
+    res.status(400).json({ error: "Mapping is required (e.g., { 'q1': 'https://...' })" });
     return;
   }
 
@@ -231,6 +188,7 @@ router.post("/images/bulk-download", async (req, res) => {
     const filename = `${safeName}${ext}`;
     const filepath = path.join(IMAGES_DIR, filename);
 
+    // Remove existing file with same name
     if (fs.existsSync(filepath)) {
       fs.unlinkSync(filepath);
     }
@@ -239,7 +197,7 @@ router.post("/images/bulk-download", async (req, res) => {
     if (success) {
       results.push({ key, filename, error: null });
     } else {
-      results.push({ key, filename: null, error: "Failed to download (server-side blocked)" });
+      results.push({ key, filename: null, error: "Failed to download" });
     }
   }
 
