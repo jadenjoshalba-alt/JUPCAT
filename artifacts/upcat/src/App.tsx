@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import TestPage from "@/pages/test";
 import ResultsPage from "@/pages/results";
 import ReviewPage from "@/pages/review";
+import ImageManagerPage from "@/pages/image-manager";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/test" component={TestPage} />
       <Route path="/results" component={ResultsPage} />
       <Route path="/review/:sessionId" component={ReviewPage} />
+      <Route path="/images" component={ImageManagerPage} />
       <Route component={NotFound} />
     </Switch>
   );

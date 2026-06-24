@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogTitle, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { markQuestionsUsed } from "@/lib/questionBank";
+import { resolveImageUrl } from "@/lib/imageResolver";
 
 export default function TestPage() {
   const [, setLocation] = useLocation();
@@ -64,7 +65,7 @@ export default function TestPage() {
       </header>
       <main className="flex-1 container mx-auto p-4 max-w-3xl">
         <div className="prose text-lg mb-4">{currentQuestion.text}</div>
-        {currentQuestion.imageUrl && <img src={currentQuestion.imageUrl} alt="Diagram" className="max-h-[300px] mb-6 border rounded" />}
+        {currentQuestion.imageUrl && <img src={resolveImageUrl(currentQuestion.imageUrl)} alt="Diagram" className="max-h-[300px] mb-6 border rounded" />}
         <div className="grid gap-3">
           {currentQuestion.choices.map((choice, i) => (
             <Button key={choice.id} variant={currentAnswer?.selectedAnswer === choice.id ? "default" : "outline"} className="justify-start h-auto p-4" onClick={() => setAnswers({...answers, [currentQuestion.id]: { questionId: currentQuestion.id, subject: currentQuestion.subject, questionText: currentQuestion.text, selectedAnswer: choice.id, correctAnswer: currentQuestion.correctAnswer, isCorrect: choice.id === currentQuestion.correctAnswer, isBlank: false }})}>

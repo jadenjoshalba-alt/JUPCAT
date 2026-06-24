@@ -418,7 +418,7 @@ const SAMPLE_PROMPT = `Generate 20 UPCAT-level Language Proficiency (English) qu
     ],
     "correctAnswer": "A",
     "explanation": "Ephemeral means short-lived (opposite of lasting), just as fragile means easily broken (opposite of strong).",
-    "imageUrl": "(optional) for diagram/chart/graph questions only"
+    "imageUrl": "images/filename.png"  // optional: for diagrams. Use Image Manager to upload images
   }
 ]
 
