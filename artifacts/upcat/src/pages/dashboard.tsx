@@ -417,7 +417,8 @@ const SAMPLE_PROMPT = `Generate 20 UPCAT-level Language Proficiency (English) qu
       {"id": "D", "text": "Beautiful : Radiant"}
     ],
     "correctAnswer": "A",
-    "explanation": "Ephemeral means short-lived (opposite of lasting), just as fragile means easily broken (opposite of strong)."
+    "explanation": "Ephemeral means short-lived (opposite of lasting), just as fragile means easily broken (opposite of strong).",
+    "imageUrl": "(optional) for diagram/chart/graph questions only"
   }
 ]
 
@@ -595,6 +596,7 @@ function PromptGeneratorPanel({
     parts.push(`  ],`);
     parts.push(`  "correctAnswer": "A",`);
     parts.push(`  "explanation": "Explanation here."`);
+    parts.push(`  "imageUrl": "(optional) for diagrams/charts only"`);
     parts.push(`}`);
     parts.push("");
     parts.push("Subject values: language_english | language_filipino | math | science | reading_english | reading_filipino");
@@ -664,6 +666,7 @@ function PromptGeneratorPanel({
             subject: item.subject,
             topic: item.topic,
             text: item.text,
+            imageUrl: item.imageUrl,
             choices: item.choices,
             correctAnswer: item.correctAnswer,
             explanation: item.explanation ?? "",

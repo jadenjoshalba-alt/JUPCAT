@@ -7,6 +7,7 @@ export interface SessionAnswer {
   questionId: string;
   subject: string;
   questionText: string;
+  imageUrl?: string;
   selectedAnswer: string | null;
   correctAnswer: string;
   isCorrect: boolean;
@@ -29,6 +30,7 @@ export interface Question {
   subject: string;
   topic?: string;
   text: string;
+  imageUrl?: string;
   choices: Choice[];
   correctAnswer: string;
   explanation?: string;

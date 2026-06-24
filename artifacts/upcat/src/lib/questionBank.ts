@@ -3,6 +3,7 @@ export interface BankQuestion {
   subject: string;
   topic?: string;
   text: string;
+  imageUrl?: string;
   choices: { id: string; text: string }[];
   correctAnswer: string;
   explanation: string;

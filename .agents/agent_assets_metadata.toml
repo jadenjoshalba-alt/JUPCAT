@@ -1,0 +1,62 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "LV7bOlQB7Xqksk6xSdiwN"
+uri = "file://artifacts/upcat/public/images/diagram_valence_dot.png"
+type = "image"
+title = "valence dot diagram"
+
+[[generated]]
+id = "bOR6Yaw6PZFVybk_PhJ8y"
+uri = "file://artifacts/upcat/public/images/diagram_atomic_structure.png"
+type = "image"
+title = "atomic structure diagram"
+
+[[generated]]
+id = "8U-sxb8BRDk0pjFgGTN_p"
+uri = "file://artifacts/upcat/public/images/diagram_periodic_table.png"
+type = "image"
+title = "periodic table trends"
+
+[[generated]]
+id = "tLscCjf0PidGv0yLpZQDv"
+uri = "file://artifacts/upcat/public/images/diagram_trig_triangle.png"
+type = "image"
+title = "trigonometry triangle"
+
+[[generated]]
+id = "Mv9Bb-Hdu-VXeDa74L_22"
+uri = "file://artifacts/upcat/public/images/diagram_circle_geometry.png"
+type = "image"
+title = "circle geometry"
+
+[[generated]]
+id = "Z462sfMSkUsnd4dKT6GLN"
+uri = "file://artifacts/upcat/public/images/diagram_bonding.png"
+type = "image"
+title = "bonding types diagram"
+
+[[generated]]
+id = "e76PwfTyh51vbIsQ2dr9m"
+uri = "file://artifacts/upcat/public/images/diagram_stoichiometry.png"
+type = "image"
+title = "stoichiometry diagram"
+
+[[generated]]
+id = "8VWHzJ0FPluk0Ouirvtlf"
+uri = "file://artifacts/upcat/public/images/diagram_atmosphere.png"
+type = "image"
+title = "atmosphere layers"
+
+[[generated]]
+id = "5VRPJqygiD9VDq2UeZD6v"
+uri = "file://artifacts/upcat/public/images/diagram_thales.png"
+type = "image"
+title = "Thales theorem geometry"
+
+[[generated]]
+id = "G64k3kRHIUcTDLR8cHCLs"
+uri = "file://artifacts/upcat/public/images/diagram_earth_layers.png"
+type = "image"
+title = "Earth layers diagram"

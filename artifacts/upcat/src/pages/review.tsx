@@ -143,6 +143,16 @@ export default function ReviewPage() {
                   <div className="prose prose-slate dark:prose-invert max-w-none text-lg whitespace-pre-wrap">
                     {answer.questionText || "Question text not available."}
                   </div>
+                  {answer.imageUrl && (
+                    <div className="mb-6 rounded-lg border bg-card overflow-hidden">
+                      <img
+                        src={answer.imageUrl}
+                        alt="Question diagram"
+                        className="w-full h-auto max-h-[400px] object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     {choices.map((choice, i) => {
