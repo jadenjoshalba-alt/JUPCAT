@@ -32,7 +32,7 @@ function stripUndefined(obj: unknown): unknown {
 }
 
 function cleanAnswer(ans: SessionAnswer): Record<string, unknown> {
-  const base = {
+  const base: Record<string, unknown> = {
     questionId: ans.questionId,
     subject: ans.subject,
     questionText: ans.questionText,

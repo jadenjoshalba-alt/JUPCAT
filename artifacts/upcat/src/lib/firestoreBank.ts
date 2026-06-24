@@ -28,7 +28,7 @@ function stripUndefined(obj: unknown): unknown {
 
 function cleanQuestions(questions: BankQuestion[]): unknown[] {
   return questions.map((q) => {
-    const base = {
+    const base: Record<string, unknown> = {
       id: q.id,
       subject: q.subject,
       text: q.text,
