@@ -37,6 +37,7 @@ function cleanQuestions(questions: BankQuestion[]): unknown[] {
     };
     if (q.topic) base.topic = q.topic;
     if (q.explanation) base.explanation = q.explanation;
+    if (q.passageId) base.passageId = q.passageId;
     return stripUndefined(base);
   });
 }

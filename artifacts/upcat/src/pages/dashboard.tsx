@@ -747,6 +747,7 @@ function PromptGeneratorPanel({
             topic: item.topic,
             text: item.text,
             imageUrl: item.imageUrl,
+            passageId: item.passageId,
             choices: item.choices,
             correctAnswer: item.correctAnswer,
             explanation: item.explanation ?? "",

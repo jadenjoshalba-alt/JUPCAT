@@ -4,6 +4,7 @@ export interface BankQuestion {
   topic?: string;
   text: string;
   imageUrl?: string;
+  passageId?: string;
   choices: { id: string; text: string }[];
   correctAnswer: string;
   explanation: string;
@@ -60,8 +61,8 @@ export function resetUsedIds(): void {
 }
 
 function getPassageId(q: BankQuestion): string | null {
-  if (q.subject.startsWith("reading_") && (q as any).passageId) {
-    return (q as any).passageId;
+  if (q.subject.startsWith("reading_") && q.passageId) {
+    return q.passageId;
   }
   if (q.subject.startsWith("reading_") && q.text.startsWith("PASSAGE:")) {
     const match = q.text.match(/^PASSAGE:\s*\n?([\s\S]*?)\n?\nQUESTION:/i);
