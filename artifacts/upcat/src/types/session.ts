@@ -20,6 +20,9 @@ export interface Session {
   id: string;
   answers: SessionAnswer[];
   totalScore: number;
+  correctCount?: number;
+  wrongCount?: number;
+  blankCount?: number;
   totalQuestions: number;
   timeTakenSeconds: number;
   createdAt: string;

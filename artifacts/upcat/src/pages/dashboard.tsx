@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/context/AuthContext";
 import { listSessions } from "@/lib/firestoreSessions";
+import { syncBankWithFirestore, uploadBankToFirestore } from "@/lib/firestoreBank";
 import { Session } from "@/types/session";
 import { useTest } from "@/context/TestContext";
 import { SUBJECT_LABELS, formatTime, calcTotalSeconds, SECONDS_PER_ITEM } from "@/lib/format";
@@ -17,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight, History, PlayCircle, BookOpen, ChevronDown, ChevronUp,
   CheckCircle, XCircle, Clock, RotateCcw, Upload, Trash2, RefreshCw,
-  AlertTriangle, Copy, FileText, Sparkles, Wand2, Calculator
+  AlertTriangle, Copy, FileText, Sparkles, Wand2, Calculator, Cloud, CloudOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -905,6 +906,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [pastSessions, setPastSessions] = useState<Session[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [bankSyncing, setBankSyncing] = useState(false);
+  const [bankSyncMsg, setBankSyncMsg] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -916,11 +919,36 @@ export default function Dashboard() {
       .then(setPastSessions)
       .catch(() => setPastSessions([]))
       .finally(() => setIsLoadingSessions(false));
+
+    // Auto-sync question bank with Firestore on login
+    syncBankWithFirestore(user.uid)
+      .then(({ merged }) => {
+        if (merged > 0) {
+          refreshBankStats();
+          setBankSyncMsg(`Synced ${merged} question(s) from your account.`);
+          setTimeout(() => setBankSyncMsg(""), 4000);
+        }
+      })
+      .catch(() => {});
   }, [user]);
 
   const refreshBankStats = useCallback(() => {
     setBankStats(getBankStats());
   }, []);
+
+  const handleSyncBank = async () => {
+    if (!user) return;
+    setBankSyncing(true);
+    try {
+      await uploadBankToFirestore(user.uid);
+      setBankSyncMsg("Question bank saved to your account.");
+    } catch {
+      setBankSyncMsg("Sync failed. Check your connection.");
+    } finally {
+      setBankSyncing(false);
+      setTimeout(() => setBankSyncMsg(""), 4000);
+    }
+  };
 
   useEffect(() => {
     refreshBankStats();
@@ -1031,6 +1059,12 @@ export default function Dashboard() {
                   <Upload className="h-4 w-4" />
                   Upload Questions
                 </Button>
+                {user && bankStats.total > 0 && (
+                  <Button size="sm" variant="outline" onClick={handleSyncBank} disabled={bankSyncing} className="gap-2">
+                    <Cloud className="h-4 w-4" />
+                    {bankSyncing ? "Saving…" : "Sync to Account"}
+                  </Button>
+                )}
                 {bankStats.unused < bankStats.total && bankStats.total > 0 && (
                   <Button size="sm" variant="outline" onClick={handleResetUsed} className="gap-2">
                     <RefreshCw className="h-4 w-4" />
@@ -1060,6 +1094,20 @@ export default function Dashboard() {
                   All questions have been used. Questions will repeat or upload more.
                 </p>
               )}
+              {bankSyncMsg && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1.5">
+                  <Cloud className="h-3.5 w-3.5" />
+                  {bankSyncMsg}
+                </p>
+              )}
+            </CardContent>
+          )}
+          {!bankStats.total && bankSyncMsg && (
+            <CardContent className="pt-0 pb-3">
+              <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                <Cloud className="h-3.5 w-3.5" />
+                {bankSyncMsg}
+              </p>
             </CardContent>
           )}
         </Card>
@@ -1192,39 +1240,43 @@ export default function Dashboard() {
             <UpgCalculator />
 
             <Card className="shadow-sm">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <History className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-lg">Past Sessions</CardTitle>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <History className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle className="text-lg">Past Sessions</CardTitle>
+                  </div>
+                  {pastSessions.length > 0 && (
+                    <span className="text-xs text-muted-foreground">{pastSessions.length} session{pastSessions.length !== 1 ? "s" : ""}</span>
+                  )}
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {isLoadingSessions ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 p-4">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="h-24 rounded-lg bg-muted animate-pulse" />
                     ))}
                   </div>
                 ) : pastSessions && pastSessions.length > 0 ? (
-                  <div className="space-y-3">
-                    {[...pastSessions].reverse().map((session) => {
-                      const correctCount = (session.answers as any[]).filter((a: any) => a.isCorrect).length;
-                      const pct = Math.round((correctCount / session.totalQuestions) * 100);
+                  <div className="overflow-y-auto max-h-[600px] divide-y">
+                    {pastSessions.map((session, idx) => {
+                      const correct = session.correctCount ?? (session.answers as any[]).filter((a: any) => a.isCorrect).length;
+                      const wrong = session.wrongCount ?? (session.answers as any[]).filter((a: any) => !a.isCorrect && !a.isBlank).length;
+                      const pct = Math.round((correct / session.totalQuestions) * 100);
+                      const upcatScore = Math.max(0, correct - 0.25 * wrong);
+                      const sessionNum = pastSessions.length - idx;
                       return (
                         <div
                           key={session.id}
-                          className="flex flex-col gap-2 p-3 rounded-lg border bg-card"
+                          className="flex flex-col gap-2 p-3 hover:bg-muted/30 transition-colors"
                         >
                           <div className="flex justify-between items-start">
-                            <div className="space-y-0.5">
-                              <div className="font-semibold text-foreground flex items-center gap-2">
-                                Score:{" "}
-                                <span className="text-primary">
-                                  {Number(session.totalScore).toFixed(2)}
-                                </span>
-                                <span className="text-muted-foreground font-normal">
-                                  / {session.totalQuestions}
-                                </span>
+                            <div className="space-y-0.5 min-w-0">
+                              <div className="font-semibold text-foreground flex items-center gap-1.5 text-sm">
+                                <span className="text-muted-foreground font-normal">#{sessionNum}</span>
+                                <span className="text-primary">{upcatScore.toFixed(2)}</span>
+                                <span className="text-muted-foreground font-normal text-xs">/ {session.totalQuestions}</span>
                               </div>
                               <div className="text-xs text-muted-foreground">
                                 {new Date(session.createdAt).toLocaleDateString("en-PH", {
@@ -1235,34 +1287,35 @@ export default function Dashboard() {
                                   minute: "2-digit",
                                 })}
                               </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="text-green-600">✓{correct}</span>
+                                <span className="text-red-500">✗{wrong}</span>
                                 <Clock className="h-3 w-3" />
                                 <span>{formatTime(session.timeTakenSeconds ?? 0)}</span>
-                                <span className="text-muted-foreground/60">· {session.totalQuestions} items</span>
                               </div>
                             </div>
                             <Badge
-                              variant={pct >= 75 ? "default" : "secondary"}
-                              className="text-xs"
+                              variant={pct >= 75 ? "default" : pct >= 50 ? "secondary" : "destructive"}
+                              className="text-xs shrink-0 ml-2"
                             >
-                              {pct}% correct
+                              {pct}%
                             </Badge>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full"
+                            className="w-full h-7 text-xs"
                             onClick={() => setLocation(`/review/${session.id}`)}
                           >
-                            Review Answers
-                            <ArrowRight className="ml-2 h-4 w-4" />
+                            Review & Explanations
+                            <ArrowRight className="ml-1.5 h-3 w-3" />
                           </Button>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-10 text-muted-foreground text-sm">
+                  <div className="text-center py-10 text-muted-foreground text-sm p-4">
                     <BookOpen className="h-8 w-8 mx-auto mb-3 opacity-30" />
                     <p>No past sessions yet.</p>
                     <p className="mt-1">Start a test to see your history here.</p>

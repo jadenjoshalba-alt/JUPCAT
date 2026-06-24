@@ -21,6 +21,9 @@ export async function saveSession(
   data: {
     answers: SessionAnswer[];
     totalScore: number;
+    correctCount?: number;
+    wrongCount?: number;
+    blankCount?: number;
     totalQuestions: number;
     timeTakenSeconds: number;
   }
@@ -38,7 +41,7 @@ export async function saveSession(
 }
 
 export async function listSessions(uid: string): Promise<Session[]> {
-  const q = query(userSessionsCol(uid), orderBy("createdAt", "asc"));
+  const q = query(userSessionsCol(uid), orderBy("createdAt", "desc"));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => {
     const raw = d.data();
@@ -48,10 +51,19 @@ export async function listSessions(uid: string): Promise<Session[]> {
         : typeof raw.createdAt === "string"
         ? raw.createdAt
         : new Date().toISOString();
+
+    const answers: SessionAnswer[] = raw.answers ?? [];
+    const correctCount = raw.correctCount ?? answers.filter((a) => a.isCorrect).length;
+    const wrongCount = raw.wrongCount ?? answers.filter((a) => !a.isCorrect && !a.isBlank).length;
+    const blankCount = raw.blankCount ?? answers.filter((a) => a.isBlank).length;
+
     return {
       id: d.id,
-      answers: raw.answers ?? [],
+      answers,
       totalScore: raw.totalScore ?? 0,
+      correctCount,
+      wrongCount,
+      blankCount,
       totalQuestions: raw.totalQuestions ?? 0,
       timeTakenSeconds: raw.timeTakenSeconds ?? 0,
       createdAt,
@@ -70,10 +82,19 @@ export async function getSession(uid: string, sessionId: string): Promise<Sessio
       : typeof raw.createdAt === "string"
       ? raw.createdAt
       : new Date().toISOString();
+
+  const answers: SessionAnswer[] = raw.answers ?? [];
+  const correctCount = raw.correctCount ?? answers.filter((a) => a.isCorrect).length;
+  const wrongCount = raw.wrongCount ?? answers.filter((a) => !a.isCorrect && !a.isBlank).length;
+  const blankCount = raw.blankCount ?? answers.filter((a) => a.isBlank).length;
+
   return {
     id: snap.id,
-    answers: raw.answers ?? [],
+    answers,
     totalScore: raw.totalScore ?? 0,
+    correctCount,
+    wrongCount,
+    blankCount,
     totalQuestions: raw.totalQuestions ?? 0,
     timeTakenSeconds: raw.timeTakenSeconds ?? 0,
     createdAt,

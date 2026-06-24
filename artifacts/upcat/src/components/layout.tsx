@@ -10,8 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, LogOut, ImagePlus } from "lucide-react";
-import { resolveImageUrl } from "@/lib/imageResolver";
+import { LogIn, LogOut } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, loading, signInWithGoogle, signOutUser } = useAuth();
@@ -21,16 +20,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center mx-auto px-4 md:px-6 max-w-6xl">
           <Link href="/" className="flex items-center gap-3 font-bold text-lg text-primary transition-colors hover:text-primary/80">
-            <img src={resolveImageUrl("up-logo.png")} alt="UP Logo" className="h-9 w-9 object-contain" />
+            <div className="h-9 w-9 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center">
+              <span className="text-primary font-extrabold text-sm">UP</span>
+            </div>
             <span>IskolarTrack</span>
           </Link>
           <div className="ml-auto flex items-center space-x-3">
-            <Link href="/images">
-              <Button variant="ghost" size="sm" className="gap-2 hidden sm:flex">
-                <ImagePlus className="h-4 w-4" />
-                Images
-              </Button>
-            </Link>
             {!loading && (
               user ? (
                 <DropdownMenu>

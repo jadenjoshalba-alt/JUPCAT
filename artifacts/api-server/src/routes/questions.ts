@@ -43,6 +43,32 @@ async function generateWithRetry(
   throw new Error("All retries exhausted");
 }
 
+const ASCII_INSTRUCTIONS = `
+CRITICAL — NO IMAGES ALLOWED:
+- Do NOT include "imageUrl" fields. This field is banned.
+- Do NOT reference external images, files, or URLs.
+- Instead, for any diagram, graph, table, or figure you would normally show as an image, represent it INLINE using ASCII art, box-drawing characters, flowchart notation, or markdown-style tables directly inside the "text" field.
+- Use these techniques:
+  • Box drawing: ┌─────┐ │ ... │ └─────┘ or simple +---+---+ | A | B | +---+---+
+  • Flowcharts: [Start] → (Process) → <Decision?> → Yes → [End]
+                                                   ↓ No
+                                               [Retry]
+  • Coordinate graphs: describe axes with ASCII like:
+      y
+      |     *
+      |   *
+      | *
+      +---------- x
+        0  1  2
+  • Number lines: <-----|-----|-----|----> 0     1     2
+  • Punnett squares, tables, periodic trend grids: use | and --- alignment
+  • Chemistry structural bonds: H-O-H or H₂O, C₆H₁₂O₆, arrows → for reactions
+  • Physics diagrams: describe forces with arrows (→ ← ↑ ↓) and labels
+  • Venn diagrams: describe overlapping sets in text: (Set A) ∩ (Set B) = {x,y}
+  • Data tables: | Col1 | Col2 | Col3 | with |------|------|------| dividers
+
+All visual content MUST be embedded as plain text inside the "text" field. No imageUrl, no external references.`;
+
 function buildPrompt(subject: string, count: number, topics: string[]): string {
   const topicLine =
     topics.length > 0
@@ -58,7 +84,8 @@ STRICT REQUIREMENTS:
 - Include a clear, educational explanation for the correct answer (2-4 sentences).
 - Questions must be factually accurate, unambiguous, and test real academic competence.
 - Add instructions before each question where appropriate.
-- ONLY return a valid JSON array — no markdown, no code fences, no extra text.`;
+- ONLY return a valid JSON array — no markdown, no code fences, no extra text.
+${ASCII_INSTRUCTIONS}`;
 
   if (subject === "reading_english" || subject === "reading_filipino") {
     const lang = subject === "reading_english" ? "English" : "Filipino";
@@ -69,10 +96,11 @@ Subject: Reading Comprehension in ${lang}
 
 IMPORTANT: Generate reading comprehension passages with accompanying questions.
 - Create ${Math.ceil(count / 3)} to ${Math.ceil(count / 2)} distinct passages.
-- Each passage: 3-6 sentences. Some passages may include descriptions like "[Image: A diagram showing...]" or "[Comic strip: ...]" for visual-based items.
+- Each passage: 3-6 sentences.
+- If a passage involves data or a figure, represent it using ASCII art or a table directly in the text — never an image.
 - Each passage must have 2 to 5 comprehension questions.
 - Total questions across all passages must equal exactly ${count}.
-- The passage text should appear in the "text" field BEFORE the question, like: "PASSAGE:\n[passage text here]\n\nQUESTION: [question about the passage]"
+- The passage text should appear in the "text" field BEFORE the question, like: "PASSAGE:\\n[passage text here]\\n\\nQUESTION: [question about the passage]"
 - All text must be in ${passageLang}.
 - Test: main idea, inference, vocabulary in context, tone, author's purpose, detail recall.
 ${topicLine}
@@ -82,7 +110,7 @@ Return exactly this JSON structure (array of ${count} questions total):
   {
     "id": "q_unique_id_1",
     "subject": "${subject}",
-    "text": "PASSAGE:\nThe Philippine eagle, one of the world's largest and most powerful birds, faces extinction due to habitat loss. Its forest home in Mindanao continues to shrink as logging and farming expand.\n\nINSTRUCTION: Read the passage and answer the question.\n\nQUESTION: What is the main threat to the Philippine eagle according to the passage?",
+    "text": "PASSAGE:\\nThe Philippine eagle, one of the world's largest and most powerful birds, faces extinction due to habitat loss. Its forest home in Mindanao continues to shrink as logging and farming expand.\\n\\nINSTRUCTION: Read the passage and answer the question.\\n\\nQUESTION: What is the main threat to the Philippine eagle according to the passage?",
     "choices": [
       {"id": "A", "text": "Hunting by local farmers"},
       {"id": "B", "text": "Habitat loss due to logging and farming"},
@@ -103,8 +131,13 @@ ${topicLine}
 
 IMPORTANT for Math:
 - Include word problems (coin problems, age problems, distance-rate-time, investment, mixture, work problems).
-- Some questions may reference a graph or figure with a textual description like: "[Graph: A line graph showing...] Based on the graph, what is the slope?"
-- Show complete mathematical expressions clearly in the text field.
+- For questions involving a graph, plot, or number line, represent them in ASCII art inline in the "text" field. Example:
+    y-axis
+    |        • (3,4)
+    |    • (1,2)
+    |
+    +-----------> x-axis
+- Show complete mathematical expressions clearly in the text field using unicode symbols (², ³, √, π, ≥, ≤, ±).
 - Test actual computation skill and conceptual understanding, not just recall.
 - For word problems, include all necessary information in the question.
 
@@ -113,15 +146,15 @@ Return exactly this JSON structure (array of exactly ${count} questions):
   {
     "id": "q_unique_id_1",
     "subject": "math",
-    "text": "INSTRUCTION: Solve the following problem.\n\nAna is 5 years older than Ben. In 3 years, the sum of their ages will be 37. How old is Ana now?",
+    "text": "INSTRUCTION: Solve the following problem.\\n\\nAna is 5 years older than Ben. In 3 years, the sum of their ages will be 37. How old is Ana now?",
     "choices": [
       {"id": "A", "text": "14"},
       {"id": "B", "text": "16"},
-      {"id": "C", "text": "17"},
+      {"id": "C", "text": "18"},
       {"id": "D", "text": "19"}
     ],
     "correctAnswer": "C",
-    "explanation": "Let Ben's current age = x, Ana's = x+5. In 3 years: (x+3) + (x+5+3) = 37 → 2x+11 = 37 → x = 13. Ana is 13+5 = 18... (adjust your computation to match your chosen answer)."
+    "explanation": "Let Ben's current age = x, Ana's = x+5. In 3 years: (x+3) + (x+8) = 37 → 2x+11 = 37 → x = 13. Ana is 13+5 = 18."
   }
 ]`;
   }
@@ -130,9 +163,14 @@ Return exactly this JSON structure (array of exactly ${count} questions):
     const physicsTopics = ["subdivision of physics", "measurement", "scalar and vectors", "newton's laws of motion", "momentum", "work", "energy", "newton laws of motion"];
     const isPhysics = topics.some(t => physicsTopics.some(p => t.toLowerCase().includes(p.toLowerCase())));
     const physicsExtra = isPhysics
-      ? `- Include some word problems requiring computation (e.g., force = mass × acceleration, kinetic energy = ½mv²).
-- Some questions may describe a graph or diagram.
-- Show formulas and units clearly.`
+      ? `- Include word problems requiring computation (e.g., F = ma, KE = ½mv², W = Fd).
+- For force diagrams, use ASCII arrows:
+    ↑ Normal Force (N)
+    |
+  [Box] ——→ Applied Force (F)
+    |
+    ↓ Weight (mg)
+- Show formulas and SI units clearly.`
       : "";
 
     return `${baseInstructions}
@@ -145,13 +183,24 @@ ${physicsExtra}
 - Questions should require genuine understanding, not just memorization of terms.
 - Use SI units where applicable.
 - Include scenario-based questions.
+- For any diagram (cell diagram, atom model, food web, etc.), represent it using ASCII art or a structured text description.
+  Example atom model:
+        e⁻
+       /
+  (nucleus)
+       \\
+        e⁻
+- For tables (periodic trends, data comparisons), use ASCII table format:
+  | Element | Atomic No. | Electronegativity |
+  |---------|------------|-------------------|
+  | Li      |     3      |       0.98        |
 
 Return exactly this JSON structure (array of exactly ${count} questions):
 [
   {
     "id": "q_unique_id_1",
     "subject": "science",
-    "text": "INSTRUCTION: Choose the best answer.\n\nA 5 kg object is pushed with a net force of 20 N. What is its acceleration?",
+    "text": "INSTRUCTION: Choose the best answer.\\n\\nA 5 kg object is pushed with a net force of 20 N. What is its acceleration?",
     "choices": [
       {"id": "A", "text": "4 m/s²"},
       {"id": "B", "text": "100 m/s²"},
@@ -173,7 +222,7 @@ ${topicLine}
 IMPORTANT for English Language Proficiency:
 - Test vocabulary, grammar, correct usage, analogies, idiomatic expressions, and sentence structure.
 - For analogy questions use format: "WORD : WORD :: _____ : _____"
-- For error identification, underline or mark the error portion in the text like: "She [don't] know the answer."
+- For error identification, mark the error portion like: "She [don't] know the answer."
 - For sentence completion, use blanks like "_____" clearly.
 - Questions should test nuanced language skills.
 
@@ -182,7 +231,7 @@ Return exactly this JSON structure (array of exactly ${count} questions):
   {
     "id": "q_unique_id_1",
     "subject": "language_english",
-    "text": "INSTRUCTION: Choose the best answer to complete the sentence.\n\nDespite the heavy rain, the athletes decided to _____ with the outdoor practice.",
+    "text": "INSTRUCTION: Choose the best answer to complete the sentence.\\n\\nDespite the heavy rain, the athletes decided to _____ with the outdoor practice.",
     "choices": [
       {"id": "A", "text": "proceed"},
       {"id": "B", "text": "precede"},
@@ -212,7 +261,7 @@ Ibalik ang eksaktong JSON na ito (array ng eksaktong ${count} tanong):
   {
     "id": "q_unique_id_1",
     "subject": "language_filipino",
-    "text": "PANUTO: Piliin ang salitang pinaka-angkop upang makumpleto ang pangungusap.\n\nKahit malakas ang ulan, nagpatuloy pa rin sila sa _____ ng kanilang pagsasanay.",
+    "text": "PANUTO: Piliin ang salitang pinaka-angkop upang makumpleto ang pangungusap.\\n\\nKahit malakas ang ulan, nagpatuloy pa rin sila sa _____ ng kanilang pagsasanay.",
     "choices": [
       {"id": "A", "text": "pagpapatuloy"},
       {"id": "B", "text": "pagwawakas"},
@@ -235,7 +284,7 @@ Return exactly this JSON structure (array of exactly ${count} questions):
   {
     "id": "q_unique_id_1",
     "subject": "${subject}",
-    "text": "INSTRUCTION: Choose the best answer.\n\n[Question text here]",
+    "text": "INSTRUCTION: Choose the best answer.\\n\\n[Question text here]",
     "choices": [
       {"id": "A", "text": "Choice A"},
       {"id": "B", "text": "Choice B"},
@@ -263,7 +312,7 @@ router.post("/questions/generate", async (req, res): Promise<void> => {
     const { subject, count, topics = [] } = subjectItem;
     const topicList = topics as string[];
 
-    // Try database first: select random questions matching subject and topics
+    // Try database first
     let dbQuestions: { id: number; subject: string; text: string; choices: unknown; correctAnswer: string; explanation: string }[] = [];
     try {
       if (topicList.length > 0) {
@@ -283,11 +332,9 @@ router.post("/questions/generate", async (req, res): Promise<void> => {
       }
     } catch (err) {
       req.log.error({ err, subject }, "DB query failed");
-      // Fall through to AI
     }
 
     if (dbQuestions.length > 0) {
-      // Use database questions (return whatever we have, even if fewer than requested)
       dbQuestions.forEach((q, i) => {
         allQuestions.push({
           id: `db_${subject}_${q.id}_${i}`,
@@ -298,11 +345,9 @@ router.post("/questions/generate", async (req, res): Promise<void> => {
           explanation: q.explanation,
         });
       });
-      // Only continue to AI if we have absolutely zero questions in the DB
       continue;
     }
 
-    // No questions in DB for this subject/topic — try AI as fallback
     if (!ai) {
       res.status(500).json({ error: "No question bank available for this subject and no AI configured." });
       return;
@@ -330,6 +375,11 @@ router.post("/questions/generate", async (req, res): Promise<void> => {
       const raw = text.trim();
       questionBatch = JSON.parse(raw);
       if (!Array.isArray(questionBatch)) throw new Error("Response is not a JSON array");
+      // Strip any imageUrl fields AI may have accidentally included
+      questionBatch = (questionBatch as any[]).map((q: any) => {
+        const { imageUrl, ...rest } = q;
+        return rest;
+      });
     } catch (err) {
       req.log.error({ text, subject }, "Failed to parse Gemini JSON response");
       res.status(500).json({ error: "AI returned an unexpected format. Please try again." });
