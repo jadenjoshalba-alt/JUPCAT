@@ -11,20 +11,6 @@ import { cn } from "@/lib/utils";
 import { markQuestionsUsed } from "@/lib/questionBank";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface QuestionGroup {
-  type: "single" | "passage";
-  passage?: string;
-  questions: {
-    id: string;
-    subject: string;
-    text: string;
-    choices: { id: string; text: string }[];
-    correctAnswer: string;
-    explanation?: string;
-  }[];
-  startIndex: number; // global question index of the first question in this group
-}
-
 function parsePassage(text: string): { passage: string | null; question: string } {
   const match = text.match(/^PASSAGE:\s*\n?([\s\S]*?)\n?\nQUESTION:\s*([\s\S]*)$/i);
   if (match) {
@@ -33,14 +19,25 @@ function parsePassage(text: string): { passage: string | null; question: string 
   return { passage: null, question: text };
 }
 
-function buildGroups(questions: any[]): QuestionGroup[] {
-  const groups: QuestionGroup[] = [];
+interface TestPage {
+  type: "single" | "passage";
+  passage?: string;
+  question: any;
+  globalIndex: number;
+  passageNum?: number;
+  questionInPassage?: number;
+  totalInPassage?: number;
+}
+
+function buildPages(questions: any[]): TestPage[] {
+  const pages: TestPage[] = [];
   let i = 0;
+  let passageCounter = 0;
   while (i < questions.length) {
     const q = questions[i];
     if (q.passageId || (q.subject.startsWith("reading_") && q.text.startsWith("PASSAGE:"))) {
-      // Reading comprehension group
       const passageId = q.passageId || "p" + i;
+      passageCounter++;
       const passageQuestions: any[] = [q];
       let j = i + 1;
       while (j < questions.length) {
@@ -54,23 +51,29 @@ function buildGroups(questions: any[]): QuestionGroup[] {
         }
       }
       const { passage } = parsePassage(q.text);
-      groups.push({
-        type: "passage",
-        passage: passage || q.text,
-        questions: passageQuestions,
-        startIndex: i,
+      const passageText = passage || q.text;
+      passageQuestions.forEach((pq, idx) => {
+        pages.push({
+          type: "passage",
+          passage: passageText,
+          question: pq,
+          globalIndex: i + idx,
+          passageNum: passageCounter,
+          questionInPassage: idx + 1,
+          totalInPassage: passageQuestions.length,
+        });
       });
       i = j;
     } else {
-      groups.push({
+      pages.push({
         type: "single",
-        questions: [q],
-        startIndex: i,
+        question: q,
+        globalIndex: i,
       });
       i++;
     }
   }
-  return groups;
+  return pages;
 }
 
 export default function TestPage() {
@@ -78,7 +81,7 @@ export default function TestPage() {
   const { user } = useAuth();
   const { questions, answers, setAnswers, timeRemaining, setTimeRemaining, status, setStatus, setLastSession } = useTest();
 
-  const [currentGroup, setCurrentGroup] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [initialTime] = useState(timeRemaining);
   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +89,7 @@ export default function TestPage() {
   const timerRef = useRef<number | null>(null);
   const timeRef = useRef<number>(timeRemaining);
 
-  const groups = useMemo(() => buildGroups(questions), [questions]);
+  const pages = useMemo(() => buildPages(questions), [questions]);
 
   useEffect(() => { timeRef.current = timeRemaining; }, [timeRemaining]);
   useEffect(() => {
@@ -157,24 +160,10 @@ export default function TestPage() {
   };
 
   if (questions.length === 0) return null;
-  const group = groups[currentGroup];
+  const page = pages[currentPage];
+  const q = page.question;
+  const userAns = answers[q.id];
   const answeredCount = Object.keys(answers).length;
-
-  // Build a map from global question index to group index
-  const questionIndexToGroup = useMemo(() => {
-    const map: number[] = [];
-    for (let g = 0; g < groups.length; g++) {
-      const grp = groups[g];
-      for (let q = 0; q < grp.questions.length; q++) {
-        map.push(g);
-      }
-    }
-    return map;
-  }, [groups]);
-
-  const globalIndex = (groupIndex: number) => {
-    return groups[groupIndex].startIndex;
-  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
@@ -193,28 +182,28 @@ export default function TestPage() {
         {/* Question number grid */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground">
-            {group.type === "passage" ? (
+            {page.type === "passage" ? (
               <span>
-                Passage <span className="text-foreground font-bold">{currentGroup + 1}</span> of {groups.length}
+                Passage <span className="text-foreground font-bold">{page.passageNum}</span>
                 <span className="text-muted-foreground text-xs ml-1">
-                  ({group.questions.length} question{group.questions.length !== 1 ? "s" : ""})
+                  (Question {page.questionInPassage} of {page.totalInPassage})
                 </span>
               </span>
             ) : (
               <span>
-                Question <span className="text-foreground font-bold">{globalIndex(currentGroup) + 1}</span> of {questions.length}
+                Question <span className="text-foreground font-bold">{page.globalIndex + 1}</span> of {questions.length}
               </span>
             )}
           </span>
           <div className="flex gap-1 flex-wrap">
-            {questions.map((q, i) => (
+            {questions.map((qItem, i) => (
               <button
-                key={q.id}
-                onClick={() => setCurrentGroup(questionIndexToGroup[i])}
+                key={qItem.id}
+                onClick={() => setCurrentPage(pages.findIndex((p) => p.question.id === qItem.id))}
                 className={cn(
                   "w-6 h-6 rounded text-xs font-bold transition-colors",
-                  i === globalIndex(currentGroup) && "ring-2 ring-primary ring-offset-1",
-                  answers[q.id] ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  i === page.globalIndex && "ring-2 ring-primary ring-offset-1",
+                  answers[qItem.id] ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
                 )}
               >
                 {i + 1}
@@ -223,68 +212,62 @@ export default function TestPage() {
           </div>
         </div>
 
-        {/* Passage view */}
-        {group.type === "passage" && group.passage && (
+        {/* Passage view — always shown for reading comprehension */}
+        {page.type === "passage" && page.passage && (
           <div className="bg-primary/5 border-2 border-primary/20 rounded-lg p-4">
             <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Reading Passage</div>
             <div className="text-base whitespace-pre-wrap font-sans leading-relaxed">
-              {group.passage}
+              {page.passage}
             </div>
           </div>
         )}
 
-        {/* Questions */}
-        {group.questions.map((q, qIdx) => {
-          const userAns = answers[q.id];
-          const { question } = parsePassage(q.text);
-          return (
-            <div key={q.id} className="border rounded-lg p-4 bg-card flex flex-col gap-3">
-              <div className="text-sm font-medium text-muted-foreground">
-                Question {globalIndex(currentGroup) + qIdx + 1}
-              </div>
-              <div className="prose max-w-none text-base whitespace-pre-wrap font-sans leading-relaxed">
-                {question}
-              </div>
-              <div className="grid gap-2">
-                {q.choices.map((choice, i) => (
-                  <Button
-                    key={choice.id}
-                    variant={userAns?.selectedAnswer === choice.id ? "default" : "outline"}
-                    className="justify-start h-auto p-3 text-left whitespace-normal"
-                    onClick={() => setAnswers({
-                      ...answers,
-                      [q.id]: {
-                        questionId: q.id,
-                        subject: q.subject,
-                        questionText: q.text,
-                        selectedAnswer: choice.id,
-                        correctAnswer: q.correctAnswer,
-                        isCorrect: choice.id === q.correctAnswer,
-                        isBlank: false,
-                      }
-                    })}
-                  >
-                    <span className="mr-3 font-bold shrink-0">{String.fromCharCode(65 + i)}.</span>
-                    <span>{choice.text}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {/* Single question */}
+        <div key={q.id} className="border rounded-lg p-4 bg-card flex flex-col gap-3">
+          <div className="text-sm font-medium text-muted-foreground">
+            Question {page.globalIndex + 1}
+          </div>
+          <div className="prose max-w-none text-base whitespace-pre-wrap font-sans leading-relaxed">
+            {parsePassage(q.text).question}
+          </div>
+          <div className="grid gap-2">
+            {q.choices.map((choice: any, i: number) => (
+              <Button
+                key={choice.id}
+                variant={userAns?.selectedAnswer === choice.id ? "default" : "outline"}
+                className="justify-start h-auto p-3 text-left whitespace-normal"
+                onClick={() => setAnswers({
+                  ...answers,
+                  [q.id]: {
+                    questionId: q.id,
+                    subject: q.subject,
+                    questionText: q.text,
+                    selectedAnswer: choice.id,
+                    correctAnswer: q.correctAnswer,
+                    isCorrect: choice.id === q.correctAnswer,
+                    isBlank: false,
+                  }
+                })}
+              >
+                <span className="mr-3 font-bold shrink-0">{String.fromCharCode(65 + i)}.</span>
+                <span>{choice.text}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
 
         {/* Navigation */}
         <div className="flex items-center justify-between pt-2">
           <Button
             variant="outline"
-            onClick={() => setCurrentGroup((g) => Math.max(0, g - 1))}
-            disabled={currentGroup === 0}
+            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Previous
           </Button>
-          {currentGroup < groups.length - 1 ? (
-            <Button onClick={() => setCurrentGroup((g) => Math.min(groups.length - 1, g + 1))}>
+          {currentPage < pages.length - 1 ? (
+            <Button onClick={() => setCurrentPage((p) => Math.min(pages.length - 1, p + 1))}>
               Next
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>

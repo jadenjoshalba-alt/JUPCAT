@@ -96,14 +96,29 @@ Subject: Reading Comprehension in ${lang}
 
 IMPORTANT: Generate reading comprehension passages with accompanying questions.
 - Create ${Math.ceil(count / 3)} to ${Math.ceil(count / 2)} distinct passages.
-- Each passage: 3-6 sentences.
+- Passage types MUST be varied across the set. Use any of these: research paper excerpt, advertisement, essay, poem, short story excerpt, instruction manual, song lyrics, scientific article, historical document, newspaper editorial, persuasive speech, biography excerpt, interview transcript, or academic journal abstract.
+- Each passage must be substantial enough for 2-5 comprehension questions.
+  • Poems: 2-4 stanzas with a clear theme.
+  • Short stories: 3-6 sentences with a clear narrative arc.
+  • Research papers: 1-2 paragraphs with a clear thesis and supporting evidence.
+  • Advertisements: standard ad format with a clear call to action and persuasive elements.
+  • Essays: 3-5 sentences with a clear argument and conclusion.
+  • Song lyrics: 2-3 verses with a clear mood or message.
+  • Instructions: a numbered or step-by-step procedural text.
+  • Scientific articles: 1-2 paragraphs explaining a concept or phenomenon.
+  • Historical documents: a short excerpt with a clear historical context.
+  • Newspaper editorials: 2-3 sentences with a clear opinion or argument.
+  • Persuasive speeches: 2-3 sentences with a clear call to action.
+  • Biography excerpts: 2-3 sentences about a person's life or achievement.
+  • Interview transcripts: 3-5 questions and answers with a clear topic.
+  • Academic journal abstracts: 1-2 paragraphs with a clear research question and methodology.
 - If a passage involves data or a figure, represent it using ASCII art or a table directly in the text — never an image.
 - Each passage must have 2 to 5 comprehension questions.
 - Total questions across all passages must equal exactly ${count}.
 - CRITICAL: Every question for the same passage MUST include a "passageId" field (e.g., "p1", "p2") and the full passage text repeated in the "text" field before the question.
 - Format each question's text like: "PASSAGE:\\n[passage text]\\n\\nQUESTION: [question text]"
 - All text must be in ${passageLang}.
-- Test: main idea, inference, vocabulary in context, tone, author's purpose, detail recall.
+- Test: main idea, inference, vocabulary in context, tone, author's purpose, detail recall, implied meaning, structural analysis, and rhetorical purpose.
 ${topicLine}
 
 Return exactly this JSON structure (array of ${count} questions total):
