@@ -148,12 +148,28 @@ ${topicLine}
 
 IMPORTANT for Math:
 - Include word problems (coin problems, age problems, distance-rate-time, investment, mixture, work problems).
+- For questions involving geometry figures (triangles, polygons, circles, right triangles), represent them in ASCII art inline in the "text" field.
+  Example — triangle with angles:
+    In a triangle with angles labeled:
+      68°
+      / \\
+    x/_____\\
+      47°
+  Example — right triangle with labeled sides:
+      |
+    a |  \
+      |    \ˆ c
+    __|______
+        b
 - For questions involving a graph, plot, or number line, represent them in ASCII art inline in the "text" field. Example:
     y-axis
     |        • (3,4)
     |    • (1,2)
     |
     +-----------> x-axis
+- For coordinate geometry: show axes with points marked as * or o.
+- For number lines: <--|-----|-----|----> 0    1    2
+- For tables and data: use markdown-style | Col1 | Col2 | with dividers.
 - Show complete mathematical expressions clearly in the text field using unicode symbols (², ³, √, π, ≥, ≤, ±).
 - Test actual computation skill and conceptual understanding, not just recall.
 - For word problems, include all necessary information in the question.

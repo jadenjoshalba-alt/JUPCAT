@@ -584,6 +584,21 @@ function PromptGeneratorPanel({
     parts.push("- Add instructions before each question where appropriate.");
     parts.push("- ONLY return a valid JSON array — no markdown, no code fences, no extra text.");
     parts.push("");
+    parts.push("CRITICAL — NO IMAGES ALLOWED:");
+    parts.push('- Do NOT include "imageUrl" fields. This field is banned. This app CANNOT render images.');
+    parts.push('- Do NOT reference external images, files, or URLs.');
+    parts.push("- Instead, for any diagram, graph, table, or figure, represent it INLINE using ASCII art, box-drawing characters, or simple text notation directly inside the \"text\" field.");
+    parts.push("- Use these techniques:");
+    parts.push("  • Triangles / polygons: draw with slashes and dashes, and label angles with text like \"68°\" or \"x\" near the vertices.");
+    parts.push("  • Circles: use ( ) and label center/radius.");
+    parts.push("  • Coordinate graphs: y-axis on left, x-axis on bottom with +, and points marked with * or o.");
+    parts.push("  • Number lines: <--|-----|-----|----> 0    1    2");
+    parts.push("  • Tables: | Col1 | Col2 | Col3 | with |------|------|------| dividers");
+    parts.push("  • Right triangles for trig: label sides as opposite, adjacent, hypotenuse with text.");
+    parts.push("  • Flowcharts / sequences: [Start] -> (Step 1) -> (Step 2) -> [End]");
+    parts.push("  • Venn diagrams: describe in text (Set A) n (Set B) = {x, y}");
+    parts.push("  • Data tables: markdown-style with | and ---");
+    parts.push("");
     parts.push("For each question, use this exact structure:");
     parts.push(`{`);
     parts.push(`  "id": "q_unique_id_here",`);
@@ -598,7 +613,6 @@ function PromptGeneratorPanel({
     parts.push(`  ],`);
     parts.push(`  "correctAnswer": "A",`);
     parts.push(`  "explanation": "Explanation here."`);
-    parts.push(`  "imageUrl": "(optional) for diagrams/charts only"`);
     parts.push(`}`);
     parts.push("");
     parts.push("Subject values: language_english | language_filipino | math | science | reading_english | reading_filipino");
@@ -661,6 +675,36 @@ function PromptGeneratorPanel({
         parts.push("- All passage and question text must be in " + lang + ".");
         parts.push("- Test: main idea, inference, vocabulary in context, tone, author's purpose, detail recall, implied meaning, structural analysis, and rhetorical purpose.");
         parts.push("- Do NOT randomize the order of questions within a passage. Keep all questions for passage 1 together, then all questions for passage 2, etc.");
+        parts.push("");
+      }
+
+      if (subject.id === "math") {
+        parts.push("");
+        parts.push("IMPORTANT for Mathematics:");
+        parts.push("- For questions involving geometry figures (triangles, polygons, circles, right triangles), represent them in ASCII art inline in the \"text\" field.");
+        parts.push("  Example — triangle with angles:");
+        parts.push("    In a triangle with angles labeled:");
+        parts.push("      68°");
+        parts.push("      / \\");
+        parts.push("    x/_____\\");
+        parts.push("      47°");
+        parts.push("  Example — right triangle with labeled sides:");
+        parts.push("      |");
+        parts.push("    a |  \\");
+        parts.push("      |    \\ c");
+        parts.push("    __|______");
+        parts.push("        b");
+        parts.push("- For questions involving a graph, plot, or number line, represent them in ASCII art inline in the \"text\" field.");
+        parts.push("  Example — coordinate graph:");
+        parts.push("    y-axis");
+        parts.push("    |        • (3,4)");
+        parts.push("    |    • (1,2)");
+        parts.push("    |");
+        parts.push("    +-----------> x-axis");
+        parts.push("  Example — number line:");
+        parts.push("    <--|-----|-----|----> 0    1    2");
+        parts.push("- For tables and data: use markdown-style | Col1 | Col2 | with dividers.");
+        parts.push("- For flowcharts / sequences: [Start] -> (Step 1) -> (Step 2) -> [End]");
         parts.push("");
       }
 
