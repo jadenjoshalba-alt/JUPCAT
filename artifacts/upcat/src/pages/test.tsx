@@ -14,6 +14,15 @@ import { Loader2, Clock, CheckCircle2, XCircle, Flag, ChevronLeft, ChevronRight,
 import { cn } from "@/lib/utils";
 import { markQuestionsUsed } from "@/lib/questionBank";
 
+// Permanent fix helper for subfolder asset pathways
+const fixImagePath = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (url.startsWith("/")) {
+    return `.${url}`;
+  }
+  return url;
+};
+
 export default function TestPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -88,13 +97,13 @@ export default function TestPage() {
         questionId: q.id,
         subject: q.subject,
         questionText: q.text,
-        imageUrl: q.imageUrl,
+        imageUrl: fixImagePath(q.imageUrl),
         selectedAnswer: userAns?.selectedAnswer || null,
         correctAnswer: q.correctAnswer,
         isCorrect,
         isBlank,
         explanation: q.explanation,
-        choices: q.choices,
+        choices: q.choices.map(c => ({ ...c, imageUrl: fixImagePath(c.imageUrl) })),
       } as SessionAnswer;
     });
 
@@ -165,7 +174,7 @@ export default function TestPage() {
       <header className="sticky top-0 z-50 w-full border-b bg-background shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl">
           <div className="flex items-center gap-4">
-            <img src="/up-logo.png" alt="UP Logo" className="h-8 w-8 object-contain hidden sm:block" />
+            <img src="./up-logo.png" alt="UP Logo" className="h-8 w-8 object-contain hidden sm:block" />
             <div className="font-bold text-lg text-primary hidden sm:block">IskolarTrack Mock Test</div>
             <div className="text-sm font-medium px-3 py-1 bg-muted rounded-full">
               {SUBJECT_LABELS[currentQuestion.subject] || currentQuestion.subject}
@@ -207,18 +216,21 @@ export default function TestPage() {
             <div className="prose prose-slate dark:prose-invert max-w-none mb-8 text-lg whitespace-pre-wrap">
               {currentQuestion.text}
             </div>
+
+            {/* Fixed Main Question Diagram Image Rendering */}
             {currentQuestion.imageUrl && (
-              <div className="mb-6 rounded-lg border bg-card overflow-hidden">
+              <div className="mb-6 rounded-lg border bg-card overflow-hidden flex justify-center">
                 <img
-                  src={currentQuestion.imageUrl}
+                  src={fixImagePath(currentQuestion.imageUrl)}
                   alt="Question diagram"
-                  className="w-full h-auto max-h-[400px] object-contain"
+                  className="w-auto h-auto max-h-[400px] object-contain p-2"
                   loading="lazy"
                 />
               </div>
             )}
 
-            <div className="space-y-3 mt-auto">
+            {/* Enhanced Grid layout supporting Text + Choice Images seamlessly */}
+            <div className="grid grid-cols-1 gap-3 mt-auto">
               {currentQuestion.choices.map((choice, i) => {
                 const isSelected = currentAnswer?.selectedAnswer === choice.id;
                 const label = String.fromCharCode(65 + i);
@@ -228,7 +240,7 @@ export default function TestPage() {
                     key={choice.id}
                     variant={isSelected ? "default" : "outline"}
                     className={cn(
-                      "justify-start h-auto py-4 px-6 text-left font-normal text-base",
+                      "flex flex-col items-start justify-center h-auto py-4 px-6 text-left font-normal text-base w-full border transition-all rounded-xl",
                       isSelected
                         ? "bg-primary text-primary-foreground hover:bg-primary/90"
                         : "hover:bg-accent hover:text-accent-foreground"
@@ -236,8 +248,21 @@ export default function TestPage() {
                     onClick={() => handleSelectAnswer(choice.id)}
                     disabled={submitted}
                   >
-                    <span className="font-bold mr-4 w-6">{label}.</span>
-                    <span className="flex-1">{choice.text}</span>
+                    <div className="flex items-start w-full">
+                      <span className="font-bold mr-4 w-6 mt-0.5">{label}.</span>
+                      <span className="flex-1 whitespace-normal break-words">{choice.text}</span>
+                    </div>
+
+                    {/* Render choice images natively when they are provided in the data scheme */}
+                    {choice.imageUrl && (
+                      <div className="mt-3 ml-10 p-1 bg-white border rounded shadow-sm max-w-[240px] overflow-hidden">
+                        <img 
+                          src={fixImagePath(choice.imageUrl)} 
+                          alt={`Choice ${label} diagram`} 
+                          className="max-h-32 object-contain w-auto h-auto"
+                        />
+                      </div>
+                    )}
                   </Button>
                 );
               })}

@@ -11,6 +11,15 @@ import { SUBJECT_LABELS } from "@/lib/format";
 import { Loader2, ArrowLeft, CheckCircle2, XCircle, MinusCircle, Lightbulb, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Permanent fix helper for subfolder asset pathways
+const fixImagePath = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  if (url.startsWith("/")) {
+    return `.${url}`;
+  }
+  return url;
+};
+
 export default function ReviewPage() {
   const [, params] = useRoute("/review/:sessionId");
   const sessionId = params?.sessionId ?? "";
@@ -143,12 +152,14 @@ export default function ReviewPage() {
                   <div className="prose prose-slate dark:prose-invert max-w-none text-lg whitespace-pre-wrap">
                     {answer.questionText || "Question text not available."}
                   </div>
+
+                  {/* Fixed Main Review Question Image Rendering */}
                   {answer.imageUrl && (
-                    <div className="mb-6 rounded-lg border bg-card overflow-hidden">
+                    <div className="mb-6 rounded-lg border bg-card overflow-hidden flex justify-center">
                       <img
-                        src={answer.imageUrl}
+                        src={fixImagePath(answer.imageUrl)}
                         alt="Question diagram"
-                        className="w-full h-auto max-h-[400px] object-contain"
+                        className="w-auto h-auto max-h-[400px] object-contain p-2"
                         loading="lazy"
                       />
                     </div>
@@ -160,7 +171,7 @@ export default function ReviewPage() {
                       const isActualCorrect = choice.id === answer.correctAnswer;
                       const label = String.fromCharCode(65 + i);
 
-                      let cardClass = "border p-4 rounded-lg flex items-start gap-4 transition-colors";
+                      let cardClass = "border p-4 rounded-xl flex flex-col items-start justify-center transition-all w-full";
                       let icon = null;
 
                       if (isSelected && isActualCorrect) {
@@ -173,37 +184,17 @@ export default function ReviewPage() {
                         cardClass = cn(cardClass, "bg-green-50/50 border-green-200 border-dashed dark:bg-green-950/10 dark:border-green-900");
                         icon = <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500 shrink-0 mt-0.5" />;
                       } else {
-                        cardClass = cn(cardClass, "bg-card opacity-60");
+                        cardClass = cn(cardClass, "bg-card opacity-60 border-border");
                         icon = <div className="w-5 h-5 shrink-0 mt-0.5" />;
                       }
 
                       return (
                         <div key={choice.id} className={cardClass}>
-                          <span className="font-bold w-6 shrink-0 text-muted-foreground">{label}.</span>
-                          <span className="flex-1">{choice.text}</span>
-                          {icon}
-                        </div>
-                      );
-                    })}
-                  </div>
+                          <div className="flex items-start w-full">
+                            <span className="font-bold w-6 shrink-0 text-muted-foreground mt-0.5">{label}.</span>
+                            <span className="flex-1 whitespace-normal break-words">{choice.text}</span>
+                            {icon}
+                          </div>
 
-                  {answer.explanation && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-5 mt-6">
-                      <div className="flex items-center gap-2 mb-2 text-primary font-semibold">
-                        <Lightbulb className="h-5 w-5" />
-                        Explanation
-                      </div>
-                      <div className="text-sm text-foreground/90 leading-relaxed">
-                        {answer.explanation}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-    </Layout>
-  );
-}
+                          {/* Render choice images inside review blocks with proper pathway fixes */}
+                          {choice.imageUrl && (
