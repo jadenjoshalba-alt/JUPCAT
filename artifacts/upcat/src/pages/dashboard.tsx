@@ -630,6 +630,40 @@ function PromptGeneratorPanel({
         parts.push(`Focus ONLY on these topics: ${topicLabels.join(", ")}.`);
       }
 
+      if (subject.id === "reading_english" || subject.id === "reading_filipino") {
+        const lang = subject.id === "reading_english" ? "English" : "Filipino (Tagalog/Filipino language)";
+        const passageCountMin = Math.ceil(count / 5);
+        const passageCountMax = Math.ceil(count / 2);
+        parts.push("");
+        parts.push(`IMPORTANT — Reading Comprehension in ${lang}:`);
+        parts.push(`- Create ${passageCountMin} to ${passageCountMax} distinct passages.`);
+        parts.push("- Passage types MUST be varied across the set. Use any of these: research paper excerpt, advertisement, essay, poem, short story excerpt, instruction manual, song lyrics, scientific article, historical document, newspaper editorial, persuasive speech, biography excerpt, interview transcript, or academic journal abstract.");
+        parts.push("- Each passage must be substantial enough for 2-5 comprehension questions.");
+        parts.push("  • Poems: 2-4 stanzas with a clear theme.");
+        parts.push("  • Short stories: 3-6 sentences with a clear narrative arc.");
+        parts.push("  • Research papers: 1-2 paragraphs with a clear thesis and supporting evidence.");
+        parts.push("  • Advertisements: standard ad format with a clear call to action and persuasive elements.");
+        parts.push("  • Essays: 3-5 sentences with a clear argument and conclusion.");
+        parts.push("  • Song lyrics: 2-3 verses with a clear mood or message.");
+        parts.push("  • Instructions: a numbered or step-by-step procedural text.");
+        parts.push("  • Scientific articles: 1-2 paragraphs explaining a concept or phenomenon.");
+        parts.push("  • Historical documents: a short excerpt with a clear historical context.");
+        parts.push("  • Newspaper editorials: 2-3 sentences with a clear opinion or argument.");
+        parts.push("  • Persuasive speeches: 2-3 sentences with a clear call to action.");
+        parts.push("  • Biography excerpts: 2-3 sentences about a person's life or achievement.");
+        parts.push("  • Interview transcripts: 3-5 questions and answers with a clear topic.");
+        parts.push("  • Academic journal abstracts: 1-2 paragraphs with a clear research question and methodology.");
+        parts.push("- If a passage involves data or a figure, represent it using ASCII art or a table directly in the text — never an image.");
+        parts.push("- Each passage must have 2 to 5 comprehension questions.");
+        parts.push("- Total questions across all passages must equal exactly " + count + ".");
+        parts.push('- CRITICAL: Every question for the same passage MUST include a "passageId" field (e.g., "p1", "p2") and the full passage text repeated in the "text" field before the question.');
+        parts.push('- Format each question\'s text like: "PASSAGE:\\n[passage text]\\n\\nQUESTION: [question text]"');
+        parts.push("- All passage and question text must be in " + lang + ".");
+        parts.push("- Test: main idea, inference, vocabulary in context, tone, author's purpose, detail recall, implied meaning, structural analysis, and rhetorical purpose.");
+        parts.push("- Do NOT randomize the order of questions within a passage. Keep all questions for passage 1 together, then all questions for passage 2, etc.");
+        parts.push("");
+      }
+
       parts.push("");
     }
 

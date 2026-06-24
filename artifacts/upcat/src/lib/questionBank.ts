@@ -59,6 +59,20 @@ export function resetUsedIds(): void {
   localStorage.removeItem(USED_KEY);
 }
 
+function getPassageId(q: BankQuestion): string | null {
+  if (q.subject.startsWith("reading_") && (q as any).passageId) {
+    return (q as any).passageId;
+  }
+  if (q.subject.startsWith("reading_") && q.text.startsWith("PASSAGE:")) {
+    const match = q.text.match(/^PASSAGE:\s*\n?([\s\S]*?)\n?\nQUESTION:/i);
+    if (match) {
+      const passageHash = match[1].trim().slice(0, 80);
+      return passageHash;
+    }
+  }
+  return null;
+}
+
 export function pickQuestions(
   subject: string,
   count: number,
@@ -77,6 +91,47 @@ export function pickQuestions(
   const unused = candidates.filter((q) => !used.has(q.id));
   const pool = unused.length >= count ? unused : candidates;
 
+  // For reading comprehension, keep passages grouped together
+  if (subject.startsWith("reading_")) {
+    // Group by passage
+    const passageGroups: Record<string, BankQuestion[]> = {};
+    const standalone: BankQuestion[] = [];
+    for (const q of pool) {
+      const pid = getPassageId(q);
+      if (pid) {
+        if (!passageGroups[pid]) passageGroups[pid] = [];
+        passageGroups[pid].push(q);
+      } else {
+        standalone.push(q);
+      }
+    }
+
+    // Shuffle passage groups
+    const groupKeys = Object.keys(passageGroups).sort(() => Math.random() - 0.5);
+
+    let result: BankQuestion[] = [];
+    for (const key of groupKeys) {
+      const group = passageGroups[key];
+      // If adding this whole group would exceed count by too much, skip
+      if (result.length + group.length > count && result.length > 0) {
+        continue;
+      }
+      result = result.concat(group);
+    }
+
+    // Add standalone questions if needed to reach count
+    const shuffledStandalone = [...standalone].sort(() => Math.random() - 0.5);
+    while (result.length < count && shuffledStandalone.length > 0) {
+      const q = shuffledStandalone.pop()!;
+      if (!result.some((r) => r.id === q.id)) {
+        result.push(q);
+      }
+    }
+
+    return result;
+  }
+
+  // For other subjects, just shuffle and pick
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }
