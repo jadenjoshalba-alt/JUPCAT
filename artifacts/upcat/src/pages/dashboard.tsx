@@ -990,7 +990,7 @@ function PaginatedSessions({
           const wrong = session.wrongCount ?? (session.answers as any[]).filter((a: any) => !a.isCorrect && !a.isBlank).length;
           const pct = Math.round((correct / session.totalQuestions) * 100);
           const upcatScore = Math.max(0, correct - 0.25 * wrong);
-          const sessionNum = start + idx + 1; // #1 = latest (top)
+          const sessionNum = sessions.length - start - idx; // newest = highest number, oldest = #1
           return (
             <div
               key={session.id}
