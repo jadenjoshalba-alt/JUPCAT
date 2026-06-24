@@ -11,10 +11,40 @@ function bankRef(uid: string) {
   return doc(db, "user_questionbanks", uid);
 }
 
+/** Recursively strip all undefined values from an object. Firestore rejects undefined. */
+function stripUndefined(obj: unknown): unknown {
+  if (obj === undefined) return null;
+  if (obj === null) return null;
+  if (Array.isArray(obj)) return obj.map(stripUndefined);
+  if (typeof obj === "object" && obj !== null) {
+    const clean: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      if (val !== undefined) clean[key] = stripUndefined(val);
+    }
+    return clean;
+  }
+  return obj;
+}
+
+function cleanQuestions(questions: BankQuestion[]): unknown[] {
+  return questions.map((q) => {
+    const base = {
+      id: q.id,
+      subject: q.subject,
+      text: q.text,
+      choices: q.choices,
+      correctAnswer: q.correctAnswer,
+    };
+    if (q.topic) base.topic = q.topic;
+    if (q.explanation) base.explanation = q.explanation;
+    return stripUndefined(base);
+  });
+}
+
 export async function uploadBankToFirestore(uid: string): Promise<void> {
   const questions = getBankQuestions();
   await setDoc(bankRef(uid), {
-    questions,
+    questions: cleanQuestions(questions),
     updatedAt: serverTimestamp(),
   });
 }
@@ -34,7 +64,7 @@ export async function syncBankWithFirestore(uid: string): Promise<{ merged: numb
   const merged = [...local, ...toAdd];
   saveBankQuestions(merged);
   await setDoc(bankRef(uid), {
-    questions: merged,
+    questions: cleanQuestions(merged),
     updatedAt: serverTimestamp(),
   });
   return { merged: toAdd.length };

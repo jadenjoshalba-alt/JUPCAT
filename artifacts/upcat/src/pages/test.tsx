@@ -51,15 +51,19 @@ export default function TestPage() {
       const isBlank = !userAns || !userAns.selectedAnswer;
       if (isCorrect) correctCount++;
       else if (!isBlank) wrongCount++;
-      return {
-        ...q,
+      // Strip any undefined values before Firestore
+      const ans: SessionAnswer = {
         questionId: q.id,
+        subject: q.subject,
         questionText: q.text,
-        imageUrl: undefined,
         selectedAnswer: userAns?.selectedAnswer || null,
+        correctAnswer: q.correctAnswer,
         isCorrect,
         isBlank,
-      } as SessionAnswer;
+      };
+      if (q.explanation) ans.explanation = q.explanation;
+      if (q.choices) ans.choices = q.choices;
+      return ans;
     });
 
     markQuestionsUsed(questions.map((q) => q.id));
@@ -78,7 +82,8 @@ export default function TestPage() {
       try {
         const saved = await saveSession(user.uid, sessionData);
         setLastSession(saved);
-      } catch {
+      } catch (err) {
+        console.error("Failed to save session to Firestore:", err);
         setLastSession({ id: "local", ...sessionData, createdAt: new Date().toISOString() });
       }
     } else {
