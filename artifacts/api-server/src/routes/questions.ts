@@ -78,7 +78,7 @@ function buildPrompt(subject: string, count: number, topics: string[]): string {
   const baseInstructions = `You are an expert UPCAT (University of the Philippines College Admission Test) question writer with decades of experience.
 
 STRICT REQUIREMENTS:
-- Difficulty: UPCAT level — not too easy, not too hard. Appropriate for high school seniors applying to UP.
+- Difficulty: UPCAT level — calibrated for a college entrance exam. Each question should be solvable by a well-prepared high school senior in 1-2 minutes. Avoid extremely complex multi-step problems or obscure trivia. Focus on clear, tested concepts that are standard UPCAT material.
 - Each question must have exactly 4 choices: A, B, C, D.
 - Exactly ONE choice is correct.
 - Include a clear, educational explanation for the correct answer (2-4 sentences).
@@ -100,7 +100,8 @@ IMPORTANT: Generate reading comprehension passages with accompanying questions.
 - If a passage involves data or a figure, represent it using ASCII art or a table directly in the text — never an image.
 - Each passage must have 2 to 5 comprehension questions.
 - Total questions across all passages must equal exactly ${count}.
-- The passage text should appear in the "text" field BEFORE the question, like: "PASSAGE:\\n[passage text here]\\n\\nQUESTION: [question about the passage]"
+- CRITICAL: Every question for the same passage MUST include a "passageId" field (e.g., "p1", "p2") and the full passage text repeated in the "text" field before the question.
+- Format each question's text like: "PASSAGE:\\n[passage text]\\n\\nQUESTION: [question text]"
 - All text must be in ${passageLang}.
 - Test: main idea, inference, vocabulary in context, tone, author's purpose, detail recall.
 ${topicLine}
@@ -109,8 +110,9 @@ Return exactly this JSON structure (array of ${count} questions total):
 [
   {
     "id": "q_unique_id_1",
+    "passageId": "p1",
     "subject": "${subject}",
-    "text": "PASSAGE:\\nThe Philippine eagle, one of the world's largest and most powerful birds, faces extinction due to habitat loss. Its forest home in Mindanao continues to shrink as logging and farming expand.\\n\\nINSTRUCTION: Read the passage and answer the question.\\n\\nQUESTION: What is the main threat to the Philippine eagle according to the passage?",
+    "text": "PASSAGE:\\nThe Philippine eagle, one of the world's largest and most powerful birds, faces extinction due to habitat loss. Its forest home in Mindanao continues to shrink as logging and farming expand.\\n\\nQUESTION: What is the main threat to the Philippine eagle according to the passage?",
     "choices": [
       {"id": "A", "text": "Hunting by local farmers"},
       {"id": "B", "text": "Habitat loss due to logging and farming"},
@@ -222,7 +224,8 @@ ${topicLine}
 IMPORTANT for English Language Proficiency:
 - Test vocabulary, grammar, correct usage, analogies, idiomatic expressions, and sentence structure.
 - For analogy questions use format: "WORD : WORD :: _____ : _____"
-- For error identification, mark the error portion like: "She [don't] know the answer."
+- For error identification, mark the error portion with **bold** text like: "She **don't** know the answer." Do NOT use underlines or brackets. Make the error word clearly stand out.
+- For error correction questions, the choices should be ONLY the single word to replace the error (e.g., choices: "doesn't", "didn't", "don't", "done"). The choices should NOT be full phrases or rewritten sentences.
 - For sentence completion, use blanks like "_____" clearly.
 - Questions should test nuanced language skills.
 
@@ -253,7 +256,8 @@ ${topicLine}
 MAHALAGA para sa Filipino Language Proficiency:
 - Susubukan ang bokabularyo, gramatika, wastong gamit, idyoma, at pagkakasunod-sunod ng pangungusap.
 - Para sa paghahalintulad (analogy): "SALITA : SALITA :: _____ : _____"
-- Para sa pagkilala ng mali, markahan ang maling bahagi.
+- Para sa pagkilala ng mali, markahan ang maling bahagi ng **bold** (e.g., "Siya **ay** pumunta sa eskwelahan."). Huwag gumamit ng underline o bracket.
+- Para sa pagwawasto ng mali, ang mga pagpipilian ay ISANG salita lamang (halimbawa: "ay", "nag", "um", "na"). Hindi buong pangungusap.
 - Para sa pagkumpleto ng pangungusap, gamitin ang "_____".
 
 Ibalik ang eksaktong JSON na ito (array ng eksaktong ${count} tanong):

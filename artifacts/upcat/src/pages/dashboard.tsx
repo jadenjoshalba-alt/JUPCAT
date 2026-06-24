@@ -1265,7 +1265,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : pastSessions && pastSessions.length > 0 ? (
-                  <ScrollArea className="max-h-[600px]">
+                  <ScrollArea className="max-h-[320px]">
                     <div className="divide-y">
                       {pastSessions.map((session, idx) => {
                         const correct = session.correctCount ?? (session.answers as any[]).filter((a: any) => a.isCorrect).length;

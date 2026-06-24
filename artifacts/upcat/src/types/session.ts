@@ -34,6 +34,7 @@ export interface Question {
   topic?: string;
   text: string;
   imageUrl?: string;
+  passageId?: string;
   choices: Choice[];
   correctAnswer: string;
   explanation?: string;
