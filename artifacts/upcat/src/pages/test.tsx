@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useTest } from "@/context/TestContext";
-import { useCreateSession, getListSessionsQueryKey } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
+import { saveSession } from "@/lib/firestoreSessions";
+import { SessionAnswer } from "@/types/session";
 import { formatTime, SUBJECT_LABELS } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,21 +12,20 @@ import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Loader2, Clock, CheckCircle2, XCircle, Flag, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { markQuestionsUsed } from "@/lib/questionBank";
 
 export default function TestPage() {
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { questions, answers, setAnswers, timeRemaining, setTimeRemaining, status, setStatus, setLastSession } = useTest();
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [initialTime] = useState(timeRemaining);
   const [submitted, setSubmitted] = useState(false);
-  
-  const createSession = useCreateSession();
+  const [isSaving, setIsSaving] = useState(false);
+
   const timerRef = useRef<number | null>(null);
   const timeRef = useRef<number>(timeRemaining);
 
@@ -67,7 +68,7 @@ export default function TestPage() {
     submitTest();
   };
 
-  const submitTest = () => {
+  const submitTest = async () => {
     setSubmitted(true);
     let correctCount = 0;
     let wrongCount = 0;
@@ -93,7 +94,7 @@ export default function TestPage() {
         isBlank,
         explanation: q.explanation,
         choices: q.choices,
-      };
+      } as SessionAnswer;
     });
 
     const totalScore = correctCount - (0.25 * wrongCount);
@@ -101,26 +102,30 @@ export default function TestPage() {
 
     markQuestionsUsed(questions.map((q) => q.id));
 
-    createSession.mutate(
-      {
-        data: {
-          answers: sessionAnswers,
-          totalScore: Math.max(0, totalScore),
-          totalQuestions: questions.length,
-          timeTakenSeconds: timeTaken,
-        },
-      },
-      {
-        onSuccess: (session) => {
-          queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
-          setLastSession(session);
-          setLocation(`/results`);
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-        },
+    const sessionData = {
+      answers: sessionAnswers,
+      totalScore: Math.max(0, totalScore),
+      totalQuestions: questions.length,
+      timeTakenSeconds: timeTaken,
+    };
+
+    if (user) {
+      setIsSaving(true);
+      try {
+        const session = await saveSession(user.uid, sessionData);
+        setLastSession(session);
+        setLocation("/results");
+      } catch (err) {
+        console.error("Failed to save session to Firestore:", err);
+        setLastSession({ id: "local", ...sessionData, createdAt: new Date().toISOString() });
+        setLocation("/results");
+      } finally {
+        setIsSaving(false);
       }
-    );
+    } else {
+      setLastSession({ id: "local", ...sessionData, createdAt: new Date().toISOString() });
+      setLocation("/results");
+    }
   };
 
   const toggleFlag = (id: string) => {
@@ -130,14 +135,14 @@ export default function TestPage() {
   const handleSelectAnswer = (choiceId: string) => {
     if (submitted) return;
     const currentQ = questions[currentIndex];
-
     const isCorrect = choiceId === currentQ.correctAnswer;
-    
+
     setAnswers({
       ...answers,
       [currentQ.id]: {
         questionId: currentQ.id,
         subject: currentQ.subject,
+        questionText: currentQ.text,
         selectedAnswer: choiceId,
         correctAnswer: currentQ.correctAnswer,
         isCorrect,
@@ -150,13 +155,12 @@ export default function TestPage() {
 
   const currentQuestion = questions[currentIndex];
   const currentAnswer = answers[currentQuestion.id];
-  
+
   const answeredCount = Object.keys(answers).length;
   const isLastQuestion = currentIndex === questions.length - 1;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
-      {/* Test Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl">
           <div className="flex items-center gap-4">
@@ -166,7 +170,7 @@ export default function TestPage() {
               {SUBJECT_LABELS[currentQuestion.subject] || currentQuestion.subject}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 font-mono text-lg tabular-nums">
               <Clock className={cn("h-5 w-5", timeRemaining < 300 ? "text-destructive animate-pulse" : "text-muted-foreground")} />
@@ -174,15 +178,14 @@ export default function TestPage() {
                 {formatTime(timeRemaining)}
               </span>
             </div>
-            <Button variant="default" onClick={() => setShowSubmitConfirm(true)} disabled={createSession.isPending || submitted}>
-              {createSession.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Test"}
+            <Button variant="default" onClick={() => setShowSubmitConfirm(true)} disabled={isSaving || submitted}>
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Test"}
             </Button>
           </div>
         </div>
       </header>
 
       <main className="flex-1 flex overflow-hidden container mx-auto max-w-7xl">
-        {/* Main Question Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-4 md:p-8">
           <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-6">
@@ -239,7 +242,7 @@ export default function TestPage() {
                 <ChevronLeft className="mr-2 h-5 w-5" />
                 Previous
               </Button>
-              
+
               <Button
                 variant={isLastQuestion ? "default" : "outline"}
                 size="lg"
@@ -258,7 +261,6 @@ export default function TestPage() {
           </div>
         </div>
 
-        {/* Sidebar Navigation */}
         <div className="w-80 border-l bg-card hidden lg:flex flex-col">
           <div className="p-4 border-b">
             <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4">Question Navigator</h3>
@@ -274,7 +276,7 @@ export default function TestPage() {
               <span className="font-bold">{answeredCount}</span> of {questions.length} answered
             </div>
           </div>
-          
+
           <ScrollArea className="flex-1">
             <div className="p-4">
               <div className="grid grid-cols-5 gap-2">
@@ -282,7 +284,7 @@ export default function TestPage() {
                   const isAns = !!answers[q.id];
                   const isFlag = flagged[q.id];
                   const isCurr = i === currentIndex;
-                  
+
                   return (
                     <button
                       key={q.id}
@@ -321,6 +323,11 @@ export default function TestPage() {
                 </span>
               )}
               Once submitted, you cannot change your answers.
+              {!user && (
+                <span className="block mt-2 text-amber-600 dark:text-amber-400">
+                  You are not signed in. Results will not be saved to the cloud.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

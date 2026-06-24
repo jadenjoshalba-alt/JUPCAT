@@ -5,10 +5,9 @@ import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { SUBJECT_LABELS, formatTime } from "@/lib/format";
-import { CheckCircle2, XCircle, MinusCircle, ArrowRight, RotateCcw } from "lucide-react";
-import { SessionAnswer } from "@workspace/api-client-react";
+import { CheckCircle2, ArrowRight, RotateCcw } from "lucide-react";
+import { SessionAnswer } from "@/types/session";
 
 export default function ResultsPage() {
   const [, setLocation] = useLocation();
@@ -23,17 +22,12 @@ export default function ResultsPage() {
   if (!lastSession) return null;
 
   const { answers, totalScore, totalQuestions, timeTakenSeconds } = lastSession;
-  
-  const correctAnswers = answers.filter((a) => a.isCorrect).length;
+
+  const correctAnswers = (answers as SessionAnswer[]).filter((a) => a.isCorrect).length;
   const percentage = (correctAnswers / totalQuestions) * 100;
-  
-  // High-level UP grading standard approximation:
-  // Usually the passing mark varies, but roughly 60-70% raw is safe for decent courses.
-  // We'll just display it objectively.
   const isPassing = percentage >= 60;
 
-  // Group by subject
-  const subjectBreakdown = answers.reduce((acc, ans) => {
+  const subjectBreakdown = (answers as SessionAnswer[]).reduce((acc, ans) => {
     if (!acc[ans.subject]) {
       acc[ans.subject] = { correct: 0, wrong: 0, blank: 0, total: 0 };
     }
@@ -47,7 +41,6 @@ export default function ResultsPage() {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        
         <div className="text-center space-y-4 pt-8">
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
             Test Results
@@ -58,7 +51,6 @@ export default function ResultsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Score Card */}
           <Card className="md:col-span-2 shadow-md border-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl">UPCAT Score Profile</CardTitle>
@@ -82,7 +74,7 @@ export default function ResultsPage() {
                     <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider mt-1">Accuracy</span>
                   </div>
                 </div>
-                
+
                 <div className="flex-1 space-y-6 w-full">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
@@ -96,7 +88,7 @@ export default function ResultsPage() {
                       <div className="text-sm text-muted-foreground">MM:SS</div>
                     </div>
                   </div>
-                  
+
                   <div className="p-4 rounded-lg bg-muted/50 border flex items-start gap-4">
                     <div className={`p-2 rounded-full ${isPassing ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                       {isPassing ? <CheckCircle2 className="h-6 w-6" /> : <AlertTriangleIcon className="h-6 w-6" />}
@@ -106,7 +98,7 @@ export default function ResultsPage() {
                         {isPassing ? "Solid Performance" : "Needs Improvement"}
                       </h4>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {isPassing 
+                        {isPassing
                           ? "You are on track. Review your mistakes to secure a higher percentile."
                           : "Focus on your weak subjects. Accuracy is more important than speed in right-minus-wrong scoring."}
                       </p>
@@ -117,16 +109,17 @@ export default function ResultsPage() {
             </CardContent>
           </Card>
 
-          {/* Action Card */}
           <Card className="shadow-md flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl">Next Steps</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-center space-y-4">
-              <Button size="lg" className="w-full text-base h-14" onClick={() => setLocation(`/review/${lastSession.id}`)}>
-                Review Answers
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              {lastSession.id !== "local" && (
+                <Button size="lg" className="w-full text-base h-14" onClick={() => setLocation(`/review/${lastSession.id}`)}>
+                  Review Answers
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              )}
               <Button size="lg" variant="outline" className="w-full text-base h-14" onClick={() => {
                 resetTest();
                 setLocation("/");
@@ -138,7 +131,6 @@ export default function ResultsPage() {
           </Card>
         </div>
 
-        {/* Breakdown Table */}
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Subject Breakdown</CardTitle>

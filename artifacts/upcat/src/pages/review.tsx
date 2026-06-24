@@ -1,23 +1,66 @@
+import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
-import { useGetSession, getGetSessionQueryKey } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
+import { getSession } from "@/lib/firestoreSessions";
+import { Session } from "@/types/session";
 import { Layout } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SUBJECT_LABELS } from "@/lib/format";
-import { Loader2, ArrowLeft, CheckCircle2, XCircle, MinusCircle, Lightbulb } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle2, XCircle, MinusCircle, Lightbulb, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ReviewPage() {
   const [, params] = useRoute("/review/:sessionId");
-  const sessionId = params?.sessionId ? parseInt(params.sessionId, 10) : 0;
+  const sessionId = params?.sessionId ?? "";
+  const { user, loading: authLoading, signInWithGoogle } = useAuth();
 
-  const { data: session, isLoading, isError } = useGetSession(sessionId, {
-    query: {
-      enabled: !!sessionId,
-      queryKey: getGetSessionQueryKey(sessionId),
-    },
-  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+
+  useEffect(() => {
+    if (!sessionId || authLoading) return;
+    if (!user) return;
+
+    setIsLoading(true);
+    setIsError(false);
+    getSession(user.uid, sessionId)
+      .then((data) => {
+        if (!data) setIsError(true);
+        else setSession(data);
+      })
+      .catch(() => setIsError(true))
+      .finally(() => setIsLoading(false));
+  }, [sessionId, user, authLoading]);
+
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-foreground">Sign in required</h2>
+            <p className="text-muted-foreground">Please sign in to view your review session.</p>
+            <Button onClick={signInWithGoogle} className="gap-2">
+              <LogIn className="h-4 w-4" />
+              Sign in with Google
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -69,7 +112,7 @@ export default function ReviewPage() {
         <div className="space-y-12">
           {session.answers.map((answer, index) => {
             const choices = answer.choices || [];
-            
+
             return (
               <Card key={answer.questionId} className="overflow-hidden border-2 shadow-sm">
                 <div className="bg-muted/30 px-6 py-3 border-b flex items-center justify-between">
@@ -95,7 +138,7 @@ export default function ReviewPage() {
                     )}
                   </div>
                 </div>
-                
+
                 <CardContent className="p-6 space-y-8">
                   <div className="prose prose-slate dark:prose-invert max-w-none text-lg whitespace-pre-wrap">
                     {answer.questionText || "Question text not available."}
@@ -106,7 +149,7 @@ export default function ReviewPage() {
                       const isSelected = answer.selectedAnswer === choice.id;
                       const isActualCorrect = choice.id === answer.correctAnswer;
                       const label = String.fromCharCode(65 + i);
-                      
+
                       let cardClass = "border p-4 rounded-lg flex items-start gap-4 transition-colors";
                       let icon = null;
 
@@ -121,7 +164,7 @@ export default function ReviewPage() {
                         icon = <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500 shrink-0 mt-0.5" />;
                       } else {
                         cardClass = cn(cardClass, "bg-card opacity-60");
-                        icon = <div className="w-5 h-5 shrink-0 mt-0.5" />; // placeholder for alignment
+                        icon = <div className="w-5 h-5 shrink-0 mt-0.5" />;
                       }
 
                       return (

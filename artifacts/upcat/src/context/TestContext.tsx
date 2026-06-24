@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Question, SessionAnswer, Session } from "@workspace/api-client-react";
+import { Question, SessionAnswer, Session } from "@/types/session";
 
 interface TestContextType {
   questions: Question[];

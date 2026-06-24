@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { useListSessions } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
+import { listSessions } from "@/lib/firestoreSessions";
+import { Session } from "@/types/session";
 import { useTest } from "@/context/TestContext";
 import { SUBJECT_LABELS, formatTime, calcTotalSeconds, SECONDS_PER_ITEM } from "@/lib/format";
 import { Layout } from "@/components/layout";
@@ -22,27 +24,12 @@ import {
   getBankStats, getBankQuestions, addBankQuestions, clearBank,
   resetUsedIds, pickQuestions, BankQuestion
 } from "@/lib/questionBank";
+import { useUpcatCountdown } from "@/hooks/useCountdown";
 
 // ─── UPCAT Countdown ──────────────────────────────────────────────────────────
 
 function UpcatCountdown() {
-  const [daysLeft, setDaysLeft] = useState(() => {
-    const upcatDate = new Date("2026-08-01T00:00:00+08:00");
-    const today = new Date();
-    const diffMs = upcatDate.getTime() - today.getTime();
-    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const upcatDate = new Date("2026-08-01T00:00:00+08:00");
-      const today = new Date();
-      const diffMs = upcatDate.getTime() - today.getTime();
-      setDaysLeft(Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24))));
-    }, 60000); // update every minute
-
-    return () => clearInterval(interval);
-  }, []);
+  const daysLeft = useUpcatCountdown();
 
   return (
     <div className="flex items-center gap-3 bg-gradient-to-r from-primary/10 to-amber-500/10 border border-primary/20 rounded-lg px-4 py-3">
@@ -912,7 +899,21 @@ export default function Dashboard() {
   const [bankStats, setBankStats] = useState<{ total: number; unused: number }>({ total: 0, unused: 0 });
   const [startError, setStartError] = useState("");
 
-  const { data: pastSessions, isLoading: isLoadingSessions } = useListSessions();
+  const { user } = useAuth();
+  const [pastSessions, setPastSessions] = useState<Session[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setPastSessions([]);
+      return;
+    }
+    setIsLoadingSessions(true);
+    listSessions(user.uid)
+      .then(setPastSessions)
+      .catch(() => setPastSessions([]))
+      .finally(() => setIsLoadingSessions(false));
+  }, [user]);
 
   const refreshBankStats = useCallback(() => {
     setBankStats(getBankStats());
