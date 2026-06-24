@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { SUBJECT_LABELS } from "@/lib/format";
 import { Loader2, ArrowLeft, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveImageUrl } from "@/lib/imageResolver";
+import { resolveImageUrl, hasImage } from "@/lib/imageResolver";
 
 export default function ReviewPage() {
   const [, params] = useRoute("/review/:sessionId");
@@ -20,13 +20,30 @@ export default function ReviewPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!sessionId || authLoading || !user) return;
-    setIsLoading(true);
-    getSession(user.uid, sessionId).then(setSession).finally(() => setIsLoading(false));
+    if (!sessionId) return;
+    // Try localStorage first (works for anonymous users)
+    if (sessionId === "local") {
+      try {
+        const raw = localStorage.getItem("upcat_last_session");
+        if (raw) {
+          setSession(JSON.parse(raw));
+          return;
+        }
+      } catch {
+        // fall through
+      }
+    }
+    // Try Firestore if logged in
+    if (!authLoading && user) {
+      setIsLoading(true);
+      getSession(user.uid, sessionId)
+        .then(setSession)
+        .finally(() => setIsLoading(false));
+    }
   }, [sessionId, user, authLoading]);
 
   if (authLoading || isLoading) return <Layout><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div></Layout>;
-  if (!user || !session) return <Layout><div className="flex-1 flex items-center justify-center p-4 text-center"><div className="space-y-4"><h2 className="text-2xl font-bold">Session Missing</h2><Button onClick={signInWithGoogle}>Sign In</Button></div></div></Layout>;
+  if (!session) return <Layout><div className="flex-1 flex items-center justify-center p-4 text-center"><div className="space-y-4"><h2 className="text-2xl font-bold">Session Missing</h2><Button onClick={signInWithGoogle}>Sign In</Button></div></div></Layout>;
 
   return (
     <Layout>
@@ -44,7 +61,7 @@ export default function ReviewPage() {
               </div>
               <CardContent className="p-6 space-y-6">
                 <div className="prose max-w-none text-lg whitespace-pre-wrap">{answer.questionText}</div>
-                {answer.imageUrl && <div className="rounded-lg border overflow-hidden flex justify-center bg-white p-2"><img src={resolveImageUrl(answer.imageUrl)} alt="Diagram" className="max-h-[350px] object-contain" /></div>}
+                {hasImage(answer.imageUrl) && <div className="rounded-lg border overflow-hidden flex justify-center bg-white p-2"><img src={resolveImageUrl(answer.imageUrl!)} alt="Diagram" className="max-h-[350px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} /></div>}
                 <div className="space-y-3">
                   {answer.choices?.map((choice, i) => {
                     const isSelected = answer.selectedAnswer === choice.id;
@@ -52,7 +69,7 @@ export default function ReviewPage() {
                     return (
                       <div key={choice.id} className={cn("border p-4 rounded-xl transition-all w-full", isSelected && isCorrect && "bg-green-50 border-green-200", isSelected && !isCorrect && "bg-red-50 border-red-200", !isSelected && isCorrect && "bg-green-50/30 border-dashed")}>
                         <div className="flex items-start gap-2"><span className="font-bold text-muted-foreground">{String.fromCharCode(65 + i)}.</span><span>{choice.text}</span></div>
-                        {choice.imageUrl && <div className="mt-3 ml-6 p-1 bg-white border rounded max-w-[240px]"><img src={resolveImageUrl(choice.imageUrl)} alt="Visual" className="max-h-32 object-contain" /></div>}
+                        {hasImage(choice.imageUrl) && <div className="mt-3 ml-6 p-1 bg-white border rounded max-w-[240px]"><img src={resolveImageUrl(choice.imageUrl!)} alt="Visual" className="max-h-32 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} /></div>}
                       </div>
                     );
                   })}

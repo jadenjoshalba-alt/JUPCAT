@@ -30,3 +30,14 @@ export function getImageRelativePath(filename: string): string {
   // Images stored in public/images/ → referenced as "images/filename"
   return `images/${filename}`;
 }
+
+/**
+ * Checks whether a question actually has a valid displayable image.
+ * Filters out placeholder strings like "diagram" or empty values.
+ */
+export function hasImage(imageUrl: string | undefined): boolean {
+  if (!imageUrl) return false;
+  const trimmed = imageUrl.trim();
+  if (trimmed === "" || trimmed === "diagram" || trimmed === "(optional)" || trimmed.startsWith("// optional")) return false;
+  return true;
+}

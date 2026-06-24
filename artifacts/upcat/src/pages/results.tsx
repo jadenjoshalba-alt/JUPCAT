@@ -11,7 +11,17 @@ import { SessionAnswer } from "@/types/session";
 
 export default function ResultsPage() {
   const [, setLocation] = useLocation();
-  const { lastSession, resetTest } = useTest();
+  const { lastSession: ctxSession, resetTest } = useTest();
+
+  // Try localStorage fallback if context session is missing
+  const lastSession = ctxSession ?? (() => {
+    try {
+      const raw = localStorage.getItem("upcat_last_session");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
 
   useEffect(() => {
     if (!lastSession) {
