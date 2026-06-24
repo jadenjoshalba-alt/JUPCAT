@@ -8,10 +8,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SUBJECT_LABELS } from "@/lib/format";
-import { Loader2, ArrowLeft, CheckCircle2, XCircle, MinusCircle, Lightbulb, LogIn } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle2, XCircle, Lightbulb, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const fixImagePath = (url: string | undefined) => (!url ? undefined : url.startsWith("/") ? `.${url}` : url);
+const fixImagePath = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  return url.startsWith("/") ? `.${url}` : url;
+};
 
 export default function ReviewPage() {
   const [, params] = useRoute("/review/:sessionId");
