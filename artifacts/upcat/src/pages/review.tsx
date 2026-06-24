@@ -11,10 +11,7 @@ import { SUBJECT_LABELS } from "@/lib/format";
 import { Loader2, ArrowLeft, CheckCircle2, XCircle, MinusCircle, Lightbulb, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const fixImagePath = (url: string | undefined) => {
-  if (!url) return undefined;
-  return url.startsWith("/") ? `.${url}` : url;
-};
+const fixImagePath = (url: string | undefined) => (!url ? undefined : url.startsWith("/") ? `.${url}` : url);
 
 export default function ReviewPage() {
   const [, params] = useRoute("/review/:sessionId");
@@ -26,111 +23,45 @@ export default function ReviewPage() {
   useEffect(() => {
     if (!sessionId || authLoading || !user) return;
     setIsLoading(true);
-    getSession(user.uid, sessionId)
-      .then((data) => setSession(data))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
+    getSession(user.uid, sessionId).then(setSession).finally(() => setIsLoading(false));
   }, [sessionId, user, authLoading]);
 
-  if (authLoading || isLoading) {
-    return (
-      <Layout>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!user || !session) {
-    return (
-      <Layout>
-        <div className="flex-1 flex items-center justify-center p-4 text-center">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Session or Auth Missing</h2>
-            <Button onClick={signInWithGoogle}>Sign In / Return Home</Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  if (authLoading || isLoading) return <Layout><div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div></Layout>;
+  if (!user || !session) return <Layout><div className="flex-1 flex items-center justify-center p-4 text-center"><div className="space-y-4"><h2 className="text-2xl font-bold">Session Missing</h2><Button onClick={signInWithGoogle}>Sign In</Button></div></div></Layout>;
 
   return (
     <Layout>
       <div className="max-w-4xl mx-auto w-full space-y-8 pb-12">
         <div className="flex items-center gap-4 border-b pb-6">
-          <Button variant="ghost" size="icon" asChild className="rounded-full">
-            <Link href="/"><ArrowLeft className="h-5 w-5" /></Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Review Answers</h1>
-            <p className="text-muted-foreground mt-1">Score: {session.totalScore} / {session.totalQuestions}</p>
-          </div>
+          <Button variant="ghost" size="icon" asChild className="rounded-full"><Link href="/"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <div><h1 className="text-3xl font-bold">Review Answers</h1><p className="text-muted-foreground mt-1">Score: {session.totalScore} / {session.totalQuestions}</p></div>
         </div>
-
         <div className="space-y-12">
-          {session.answers.map((answer, index) => {
-            const choices = answer.choices || [];
-            return (
-              <Card key={answer.questionId} className="overflow-hidden border-2 shadow-sm">
-                <div className="bg-muted/30 px-6 py-3 border-b flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-muted-foreground">#{index + 1}</span>
-                    <Badge variant="outline">{SUBJECT_LABELS[answer.subject] || answer.subject}</Badge>
-                  </div>
-                  <Badge variant={answer.isCorrect ? "default" : "destructive"}>
-                    {answer.isCorrect ? "Correct" : "Incorrect"}
-                  </Badge>
+          {session.answers.map((answer, index) => (
+            <Card key={answer.questionId} className="overflow-hidden border-2 shadow-sm">
+              <div className="bg-muted/30 px-6 py-3 border-b flex items-center justify-between">
+                <div className="flex items-center gap-3"><span className="font-bold text-muted-foreground">#{index + 1}</span><Badge variant="outline">{SUBJECT_LABELS[answer.subject] || answer.subject}</Badge></div>
+                <Badge variant={answer.isCorrect ? "default" : "destructive"}>{answer.isCorrect ? "Correct" : "Incorrect"}</Badge>
+              </div>
+              <CardContent className="p-6 space-y-6">
+                <div className="prose max-w-none text-lg whitespace-pre-wrap">{answer.questionText}</div>
+                {answer.imageUrl && <div className="rounded-lg border overflow-hidden flex justify-center bg-white p-2"><img src={fixImagePath(answer.imageUrl)} alt="Diagram" className="max-h-[350px] object-contain" /></div>}
+                <div className="space-y-3">
+                  {answer.choices?.map((choice, i) => {
+                    const isSelected = answer.selectedAnswer === choice.id;
+                    const isCorrect = choice.id === answer.correctAnswer;
+                    return (
+                      <div key={choice.id} className={cn("border p-4 rounded-xl transition-all w-full", isSelected && isCorrect && "bg-green-50 border-green-200", isSelected && !isCorrect && "bg-red-50 border-red-200", !isSelected && isCorrect && "bg-green-50/30 border-dashed")}>
+                        <div className="flex items-start gap-2"><span className="font-bold text-muted-foreground">{String.fromCharCode(65 + i)}.</span><span>{choice.text}</span></div>
+                        {choice.imageUrl && <div className="mt-3 ml-6 p-1 bg-white border rounded max-w-[240px]"><img src={fixImagePath(choice.imageUrl)} alt="Visual" className="max-h-32 object-contain" /></div>}
+                      </div>
+                    );
+                  })}
                 </div>
-
-                <CardContent className="p-6 space-y-6">
-                  <div className="prose max-w-none text-lg whitespace-pre-wrap">{answer.questionText}</div>
-
-                  {answer.imageUrl && (
-                    <div className="rounded-lg border overflow-hidden flex justify-center bg-white p-2">
-                      <img src={fixImagePath(answer.imageUrl)} alt="Diagram" className="max-h-[350px] object-contain" />
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    {choices.map((choice, i) => {
-                      const isSelected = answer.selectedAnswer === choice.id;
-                      const isCorrectChoice = choice.id === answer.correctAnswer;
-                      const label = String.fromCharCode(65 + i);
-
-                      return (
-                        <div key={choice.id} className={cn(
-                          "border p-4 rounded-xl transition-all w-full",
-                          isSelected && isCorrectChoice && "bg-green-50 border-green-200 dark:bg-green-950/20",
-                          isSelected && !isCorrectChoice && "bg-red-50 border-red-200 dark:bg-red-950/20",
-                          !isSelected && isCorrectChoice && "bg-green-50/30 border-green-200 border-dashed",
-                          !isSelected && !isCorrectChoice && "opacity-70 bg-card"
-                        )}>
-                          <div className="flex items-start w-full gap-2">
-                            <span className="font-bold text-muted-foreground">{label}.</span>
-                            <span className="flex-1">{choice.text}</span>
-                          </div>
-
-                          {choice.imageUrl && (
-                            <div className="mt-3 ml-6 p-1 bg-white border rounded max-w-[240px]">
-                              <img src={fixImagePath(choice.imageUrl)} alt="Choice visual" className="max-h-32 object-contain" />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {answer.explanation && (
-                    <div className="bg-primary/5 border rounded-lg p-4 mt-4">
-                      <div className="flex items-center gap-2 mb-1 text-primary font-semibold"><Lightbulb className="h-4 w-4"/>Explanation</div>
-                      <p className="text-sm text-muted-foreground">{answer.explanation}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                {answer.explanation && <div className="bg-primary/5 border rounded-lg p-4 mt-4"><div className="flex items-center gap-2 mb-1 text-primary font-semibold"><Lightbulb className="h-4 w-4"/>Explanation</div><p className="text-sm text-muted-foreground">{answer.explanation}</p></div>}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </Layout>
