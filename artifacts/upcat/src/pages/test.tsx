@@ -4,18 +4,11 @@ import { useTest } from "@/context/TestContext";
 import { useAuth } from "@/context/AuthContext";
 import { saveSession } from "@/lib/firestoreSessions";
 import { SessionAnswer } from "@/types/session";
-import { formatTime, SUBJECT_LABELS } from "@/lib/format";
+import { formatTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Clock, Flag, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogTitle, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { markQuestionsUsed } from "@/lib/questionBank";
-
-const fixImagePath = (url: string | undefined): string | undefined => {
-  if (!url) return undefined;
-  return url.startsWith("/") ? `.${url}` : url;
-};
 
 export default function TestPage() {
   const [, setLocation] = useLocation();
@@ -23,11 +16,8 @@ export default function TestPage() {
   const { questions, answers, setAnswers, timeRemaining, setTimeRemaining, status, setStatus, setLastSession } = useTest();
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [initialTime] = useState(timeRemaining);
-  const [submitted, setSubmitted] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const timerRef = useRef<number | null>(null);
   const timeRef = useRef<number>(timeRemaining);
@@ -38,29 +28,25 @@ export default function TestPage() {
     if (status !== "running") return;
     timerRef.current = window.setInterval(() => {
       const next = timeRef.current - 1;
-      if (next <= 0) { clearInterval(timerRef.current!); setTimeRemaining(0); handleAutoSubmit(); }
+      if (next <= 0) { clearInterval(timerRef.current!); setTimeRemaining(0); handleManualSubmit(); }
       else { setTimeRemaining(next); }
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [status, questions.length]);
 
-  const handleAutoSubmit = () => { setStatus("finished"); submitTest(); };
-  const handleManualSubmit = () => { setShowSubmitConfirm(false); setStatus("finished"); if (timerRef.current) clearInterval(timerRef.current); submitTest(); };
-
-  const submitTest = async () => {
-    setSubmitted(true);
-    let correctCount = 0; let wrongCount = 0;
+  const handleManualSubmit = async () => {
+    setShowSubmitConfirm(false); setStatus("finished"); if (timerRef.current) clearInterval(timerRef.current);
+    let correctCount = 0;
     const sessionAnswers = questions.map((q) => {
       const userAns = answers[q.id];
-      const isBlank = !userAns;
-      const isCorrect = userAns ? userAns.selectedAnswer === q.correctAnswer : false;
+      const isCorrect = userAns?.selectedAnswer === q.correctAnswer;
       if (isCorrect) correctCount++;
-      return { questionId: q.id, subject: q.subject, questionText: q.text, imageUrl: fixImagePath(q.imageUrl), selectedAnswer: userAns?.selectedAnswer || null, correctAnswer: q.correctAnswer, isCorrect, isBlank, explanation: q.explanation, choices: q.choices.map(c => ({ ...c, imageUrl: fixImagePath(c.imageUrl) })) } as SessionAnswer;
+      return { ...q, questionId: q.id, questionText: q.text, imageUrl: q.imageUrl, selectedAnswer: userAns?.selectedAnswer || null, isCorrect, isBlank: !userAns } as SessionAnswer;
     });
     markQuestionsUsed(questions.map((q) => q.id));
-    const sessionData = { answers: sessionAnswers, totalScore: Math.max(0, correctCount - (0.25 * wrongCount)), totalQuestions: questions.length, timeTakenSeconds: initialTime - timeRemaining };
-    if (user) { setIsSaving(true); try { const session = await saveSession(user.uid, sessionData); setLastSession(session); } catch {} finally { setLocation("/results"); } }
-    else { setLastSession({ id: "local", ...sessionData, createdAt: new Date().toISOString() }); setLocation("/results"); }
+    const sessionData = { answers: sessionAnswers, totalScore: correctCount, totalQuestions: questions.length, timeTakenSeconds: initialTime - timeRemaining };
+    if (user) { await saveSession(user.uid, sessionData); setLastSession({ id: "saved", ...sessionData, createdAt: new Date().toISOString() }); }
+    setLocation("/results");
   };
 
   if (questions.length === 0) return null;
@@ -69,28 +55,25 @@ export default function TestPage() {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
-      <header className="sticky top-0 z-50 w-full border-b bg-background shadow-sm">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-7xl">
-          <div className="font-bold text-lg text-primary">IskolarTrack Mock Test</div>
-          <div className="flex items-center gap-6"><span className={cn("font-mono text-lg", timeRemaining < 300 && "text-destructive font-bold")}>{formatTime(timeRemaining)}</span><Button onClick={() => setShowSubmitConfirm(true)}>Submit</Button></div>
+      <header className="border-b p-4 flex justify-between items-center">
+        <div className="font-bold text-lg">IskolarTrack Mock Test</div>
+        <div className="flex items-center gap-4">
+          <span className="font-mono text-lg">{formatTime(timeRemaining)}</span>
+          <Button onClick={() => setShowSubmitConfirm(true)}>Submit</Button>
         </div>
       </header>
-      <main className="flex-1 container mx-auto p-4 md:p-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="prose max-w-none text-lg mb-4">{currentQuestion.text}</div>
-          {currentQuestion.imageUrl && <div className="rounded-lg border p-2 flex justify-center bg-white"><img src={fixImagePath(currentQuestion.imageUrl)} alt="Diagram" className="max-h-[300px] object-contain" /></div>}
-          <div className="grid gap-3 mt-6">
-            {currentQuestion.choices.map((choice, i) => (
-              <Button key={choice.id} variant={currentAnswer?.selectedAnswer === choice.id ? "default" : "outline"} className="h-auto py-4 px-6 text-left justify-start" onClick={() => { const isCorrect = choice.id === currentQuestion.correctAnswer; setAnswers({...answers, [currentQuestion.id]: { questionId: currentQuestion.id, subject: currentQuestion.subject, questionText: currentQuestion.text, selectedAnswer: choice.id, correctAnswer: currentQuestion.correctAnswer, isCorrect, isBlank: false }}); }}>
-                <span className="font-bold mr-3">{String.fromCharCode(65 + i)}.</span>
-                <span className="flex-1">{choice.text}</span>
-                {choice.imageUrl && <img src={fixImagePath(choice.imageUrl)} className="ml-4 max-h-16" />}
-              </Button>
-            ))}
-          </div>
+      <main className="flex-1 container mx-auto p-4 max-w-3xl">
+        <div className="prose text-lg mb-4">{currentQuestion.text}</div>
+        {currentQuestion.imageUrl && <img src={currentQuestion.imageUrl} alt="Diagram" className="max-h-[300px] mb-6 border rounded" />}
+        <div className="grid gap-3">
+          {currentQuestion.choices.map((choice, i) => (
+            <Button key={choice.id} variant={currentAnswer?.selectedAnswer === choice.id ? "default" : "outline"} className="justify-start h-auto p-4" onClick={() => setAnswers({...answers, [currentQuestion.id]: { questionId: currentQuestion.id, subject: currentQuestion.subject, questionText: currentQuestion.text, selectedAnswer: choice.id, correctAnswer: currentQuestion.correctAnswer, isCorrect: choice.id === currentQuestion.correctAnswer, isBlank: false }})}>
+              <span className="mr-3 font-bold">{String.fromCharCode(65 + i)}.</span> {choice.text}
+            </Button>
+          ))}
         </div>
       </main>
-      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}><AlertDialogContent><AlertDialogTitle>Submit?</AlertDialogTitle><AlertDialogFooter><AlertDialogCancel>Continue</AlertDialogCancel><AlertDialogAction onClick={handleManualSubmit}>Submit</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}><AlertDialogContent><AlertDialogTitle>Submit test?</AlertDialogTitle><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleManualSubmit}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>
   );
 }
