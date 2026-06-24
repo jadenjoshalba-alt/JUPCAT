@@ -18,10 +18,10 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight, History, PlayCircle, BookOpen, ChevronDown, ChevronUp,
   CheckCircle, XCircle, Clock, RotateCcw, Upload, Trash2, RefreshCw,
-  AlertTriangle, Copy, FileText, Sparkles, Wand2, Calculator, Cloud, CloudOff
+  AlertTriangle, Copy, FileText, Sparkles, Wand2, Calculator, Cloud, CloudOff,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   getBankStats, getBankQuestions, addBankQuestions, clearBank,
   resetUsedIds, pickQuestions, BankQuestion
@@ -884,6 +884,115 @@ function PromptGeneratorPanel({
   );
 }
 
+// ─── Paginated Sessions Component ─────────────────────────────────────────────
+
+const SESSIONS_PER_PAGE = 5;
+
+function PaginatedSessions({
+  sessions,
+  onReview,
+}: {
+  sessions: Session[];
+  onReview: (id: string) => void;
+}) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(sessions.length / SESSIONS_PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  if (safePage !== page) setPage(safePage);
+
+  const start = (safePage - 1) * SESSIONS_PER_PAGE;
+  const pageSessions = sessions.slice(start, start + SESSIONS_PER_PAGE);
+
+  return (
+    <div>
+      <div className="divide-y">
+        {pageSessions.map((session, idx) => {
+          const correct = session.correctCount ?? (session.answers as any[]).filter((a: any) => a.isCorrect).length;
+          const wrong = session.wrongCount ?? (session.answers as any[]).filter((a: any) => !a.isCorrect && !a.isBlank).length;
+          const pct = Math.round((correct / session.totalQuestions) * 100);
+          const upcatScore = Math.max(0, correct - 0.25 * wrong);
+          const sessionNum = start + idx + 1; // #1 = latest (top)
+          return (
+            <div
+              key={session.id}
+              className="flex flex-col gap-2 p-3 hover:bg-muted/30 transition-colors"
+            >
+              <div className="flex justify-between items-start">
+                <div className="space-y-0.5 min-w-0">
+                  <div className="font-semibold text-foreground flex items-center gap-1.5 text-sm">
+                    <span className="text-muted-foreground font-normal">#{sessionNum}</span>
+                    <span className="text-primary">{upcatScore.toFixed(2)}</span>
+                    <span className="text-muted-foreground font-normal text-xs">/ {session.totalQuestions}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(session.createdAt).toLocaleDateString("en-PH", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="text-green-600">✓{correct}</span>
+                    <span className="text-red-500">✗{wrong}</span>
+                    <Clock className="h-3 w-3" />
+                    <span>{formatTime(session.timeTakenSeconds ?? 0)}</span>
+                  </div>
+                </div>
+                <Badge
+                  variant={pct >= 75 ? "default" : pct >= 50 ? "secondary" : "destructive"}
+                  className="text-xs shrink-0 ml-2"
+                >
+                  {pct}%
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-7 text-xs"
+                onClick={() => onReview(session.id)}
+              >
+                Review & Explanations
+                <ArrowRight className="ml-1.5 h-3 w-3" />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between p-3 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            disabled={safePage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            <ChevronLeft className="h-3 w-3" />
+            Prev
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Page {safePage} of {totalPages}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+            <ChevronRight className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -1265,63 +1374,10 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : pastSessions && pastSessions.length > 0 ? (
-                  <ScrollArea className="max-h-[320px]">
-                    <div className="divide-y">
-                      {pastSessions.map((session, idx) => {
-                        const correct = session.correctCount ?? (session.answers as any[]).filter((a: any) => a.isCorrect).length;
-                        const wrong = session.wrongCount ?? (session.answers as any[]).filter((a: any) => !a.isCorrect && !a.isBlank).length;
-                        const pct = Math.round((correct / session.totalQuestions) * 100);
-                        const upcatScore = Math.max(0, correct - 0.25 * wrong);
-                        const sessionNum = pastSessions.length - idx;
-                        return (
-                          <div
-                            key={session.id}
-                            className="flex flex-col gap-2 p-3 hover:bg-muted/30 transition-colors"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-0.5 min-w-0">
-                                <div className="font-semibold text-foreground flex items-center gap-1.5 text-sm">
-                                  <span className="text-muted-foreground font-normal">#{sessionNum}</span>
-                                  <span className="text-primary">{upcatScore.toFixed(2)}</span>
-                                  <span className="text-muted-foreground font-normal text-xs">/ {session.totalQuestions}</span>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {new Date(session.createdAt).toLocaleDateString("en-PH", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span className="text-green-600">✓{correct}</span>
-                                  <span className="text-red-500">✗{wrong}</span>
-                                  <Clock className="h-3 w-3" />
-                                  <span>{formatTime(session.timeTakenSeconds ?? 0)}</span>
-                                </div>
-                              </div>
-                              <Badge
-                                variant={pct >= 75 ? "default" : pct >= 50 ? "secondary" : "destructive"}
-                                className="text-xs shrink-0 ml-2"
-                              >
-                                {pct}%
-                              </Badge>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full h-7 text-xs"
-                              onClick={() => setLocation(`/review/${session.id}`)}
-                            >
-                              Review & Explanations
-                              <ArrowRight className="ml-1.5 h-3 w-3" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
+                  <PaginatedSessions
+                    sessions={pastSessions}
+                    onReview={(id) => setLocation(`/review/${id}`)}
+                  />
                 ) : (
                   <div className="text-center py-10 text-muted-foreground text-sm p-4">
                     <BookOpen className="h-8 w-8 mx-auto mb-3 opacity-30" />
