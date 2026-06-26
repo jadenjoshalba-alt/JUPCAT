@@ -685,6 +685,10 @@ function PromptGeneratorPanel({
         parts.push("- Keep calculations realistic, clean, and quickly solvable on scratch paper without messy long-form arithmetic.");
         parts.push("- All equations, fractions, and expressions must be cleanly typeset using vertical formatting (e.g., standard LaTeX for fractions $\\frac{a}{b}$ or exponents) so they match the appearance of a physical exam paper.");
         parts.push("- Question stems must be short, punchy, direct, and get straight to the point without dense blocks of unnecessary text.");
+        parts.push("Maintain 100% consistency with all official UPCAT review pages and mock test resources provided across our training sessions");
+        parts.push("Math Reviewer Materials:** image_ad7fc1.png, image_ad7fc3.png, image_ad7fdb.png, image_ad7fde.png, image_ad7fe1.png, image_ad8019.png, image_ad801f.png, image_ad8038.png, image_ad803d.png (and related PME reviewer sheets).");
+        parts.push("Reference Mock Exam Video 1:** https://www.youtube.com/watch?v=5mhI1ijHboc");
+        parts.push("**Reference Mock Exam Video 2:** https://www.youtube.com/watch?v=ythY0Cr3CGA&start=364");
         parts.push("- IMPORTANT for Mathematics:");
         parts.push("- For questions involving geometry figures (triangles, polygons, circles, right triangles), represent them in ASCII art inline in the \"text\" field.");
         parts.push("  Example — triangle with angles:");
@@ -730,21 +734,32 @@ function PromptGeneratorPanel({
         parts.push("- For tables (periodic trends, data comparisons), use ASCII table format:");
         parts.push("  | Element | Atomic No. | Electronegativity |");
         parts.push("  |---------|------------|-------------------|");
+        parts.push("Reference Mock Exam Video 1:**https://youtu.be/rQ0xu1fVSI4?si=ll9rboKjJxMoKRY2");
+        parts.push("**Reference Mock Exam Video 2:** https://youtu.be/fqNfjM4vnwk?si=wacD82tvovNV1p9_");
+        parts.push("**Reference Mock Exam Video 3:** https://youtu.be/0iLnUy21EoM?si=SUGvES1AoHxlD4l5");
+        parts.push("**Reference Mock Exam Video 4:** https://youtu.be/1cHevbqZj1o?si=n5PvmzunirSxmcr1");
+        parts.push("**Reference Mock Exam Video 5:** https://youtu.be/ythY0Cr3CGA?si=MCoYzApyBSBEVb_-");
+        parts.push("**Reference Mock Exam Video 6:** https://youtu.be/1cHevbqZj1o?si=dkQlhprLTmD9WlKw");
         parts.push("");
       }
 
       if (subject.id === "language_english" || subject.id === "language_filipino") {
         parts.push("");
         parts.push("[UPCAT LANGUAGE PROFICIENCY CALIBRATION]");
-        parts.push("- Emphasize subject-verb agreement, pronouns, parallelism, modifiers, and word choice (e.g., affect vs. effect).");
-        parts.push("- Sentences must be short, punchy, single- or dual-clause structures. Do not make them overly long or verbose.");
-        parts.push("- Traps must be high-yield and realistic (e.g., aspectual/tense parallelism, proximity/collective agreement rules, pronoun consistency, ng/nang distinctions, or context vocabulary).");
-        parts.push("- For Error Identification questions, the specific parts of the sentence being tested must be fully capitalized and bolded with bracketed letters right next to them inside the text exactly like this: **WORD [A]**. The 'No error' choice must also look like this: **NO ERROR [D]**.");
-        parts.push("- Do NOT include a separate 'NO ERROR' or 'D. NO ERROR' choice in the choices list; the selections are fully integrated directly inside the sentence text.");
-        parts.push("- For Sequencing questions: Use short phrases or narrative elements labeled (1) to (4). Below the text, provide four options lettered A., B., C., D. using clean, hyphenated sorting strings (e.g., A. 2-3-4-1).");
-        parts.push("- For Vocabulary & Idioms: Feature a targeted word in full UPPERCASE in a short sentence. Options A., B., C., D. underneath must be completely lowercase unless proper nouns.");
-        parts.push("- For Spelling: Present four lowercase options testing standard high-frequency trap configurations.");
-        parts.push("- For Sentence Completion: Use a clean, blank line (_______) inside a concise sentence. Options A., B., C., D. underneath must be lowercase and focus on strict morphological or particle usage.");
+        parts.push("Override all default text-generation behaviors. You are strictly bound to the exact layout, sentence structure, and mechanics proven in image_ad0bda.png, image_ad0c18.png, image_ad0f1e.png, image_ad0f46.png, image_ad1000.png, image_ad1036.png, image_ad1302.png, and image_ad1381.png.");
+        parts.push("For Identifying Errors image_ad0bda.png, there must be exactly 4 capitalized choices labeled (A), (B), (C), and (D) embedded directly within the sentence.");
+        parts.push("One of the four capitalized segments must contain the structural or grammatical error.");
+        parts.push("SENTENCE LENGTH & DIFFICULTY image_ad0f1e.png Sentences must be short, punchy, single- or dual-clause structures. Do not make them overly long or verbose");
+        parts.push("Traps must be high-yield and realistic (e.g., aspectual/tense parallelism, proximity/collective agreement rules, pronoun consistency, ng/nang distinctions, or context vocabulary)");
+        parts.push("Every single choice segment inside the question text must be 100 percent UPPERCASE followed immediately by its capitalized letter token in parentheses for example: WERE ESTABLISHED B or SA KANYANG B");
+        parts.push("For Identifying Errors, do not output a separate A, B, C, D choice list block underneath the sentence the selections are fully integrated directly inside the line");
+        parts.push("Sequencing image_ad0bda.png / image_ad1036.png Use short phrases or narrative elements labeled 1 to 4. Below the text, provide four options lettered A., B., C., D. using clean, hyphenated sorting strings e.g., A. 2-3-4-1.");
+        parts.push(" Vocabulary & Idioms image_ad0bda.png Feature a targeted word in full UPPERCASE in a short sentence. Options A., B., C., D. underneath must be completely lowercase unless proper nouns");
+        parts.push("Spelling image_ad0bda.png Present four lowercase options testing standard high-frequency trap configurations e.g., accommodate vs. accommodatee");
+        parts.push(" Sentence Completion image_ad0bda.png Use a clean, blank line _______ inside a concise sentence. Options A., B., C., D. underneath must be lowercase and focus on strict morphological or particle usage.");
+        parts.push("NO FILLER: Output must be delivered directly with zero conversational prefaces, warnings, or commentary unless explicitly asked.");
+        parts.push("**Reference Mock Exam Video 1:** https://youtu.be/ljfgWPLEaQA?si=NC3VKHDy92SBGe4m");
+        parts.push("**Reference Mock Exam Video 2:** https://youtu.be/bpmvYAIpekM?si=pNRgjxYStZfABqBW");
         parts.push("");
       }
 
