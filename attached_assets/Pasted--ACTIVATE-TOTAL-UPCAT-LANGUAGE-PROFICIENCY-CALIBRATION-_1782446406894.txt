@@ -1,0 +1,72 @@
+[ACTIVATE TOTAL UPCAT LANGUAGE PROFICIENCY CALIBRATION]
+
+Override all default text-generation behaviors. You are strictly bound to the exact layout, sentence structure, and mechanics proven in image_ad0bda.png, image_ad0c18.png, image_ad0f1e.png, image_ad0f46.png, image_ad1000.png, image_ad1036.png, image_ad1302.png, and image_ad1381.png.
+
+
+
+1. NO UNDERLINES & NO "NO ERROR" SAFETY NET (image_ad0bda.png):
+
+   - For Sub-test 1: Identifying Errors, there must be exactly 4 capitalized choices labeled (A), (B), (C), and (D) embedded directly within the sentence.
+
+   - Do NOT include a "NO ERROR" or "D. NO ERROR" choice. One of the four capitalized segments must contain the structural or grammatical error.
+
+2. SENTENCE LENGTH & DIFFICULTY (image_ad0f1e.png):
+
+   - Sentences must be short, punchy, single- or dual-clause structures. Do not make them overly long or verbose.
+
+   - Traps must be high-yield and realistic (e.g., aspectual/tense parallelism, proximity/collective agreement rules, pronoun consistency, ng/nang distinctions, or context vocabulary).
+
+3. STRICT TEXT EMBEDDED CAPITALIZATION:
+
+   - Every single choice segment inside the question text must be 100% UPPERCASE followed immediately by its capitalized letter token in parentheses, for example: "WERE ESTABLISHED (B)" or "SA KANYANG (B)".
+
+   - For Identifying Errors, do not output a separate A, B, C, D choice list block underneath the sentence; the selections are fully integrated directly inside the line.
+
+4. SUB-TEST SPECIFIC STRUCTURES:
+
+   - Sub-test 2: Sequencing (image_ad0bda.png / image_ad1036.png): Use short phrases or narrative elements labeled (1) to (4). Below the text, provide four options lettered A., B., C., D. using clean, hyphenated sorting strings (e.g., A. 2-3-4-1).
+
+   - Sub-test 3: Vocabulary & Idioms (image_ad0bda.png): Feature a targeted word in full UPPERCASE in a short sentence. Options A., B., C., D. underneath must be completely lowercase unless proper nouns.
+
+   - Sub-test 4: Spelling (image_ad0bda.png): Present four lowercase options testing standard high-frequency trap configurations (e.g., accommodate vs. accommodatee).
+
+   - Sub-test 5: Sentence Completion (image_ad0bda.png): Use a clean, blank line (_______) inside a concise sentence. Options A., B., C., D. underneath must be lowercase and focus on strict morphological or particle usage.
+
+5. NO FILLER: Output must be delivered directly with zero conversational prefaces, warnings, or commentary unless explicitly asked.
+
+
+
+[ACTIVATE UPCAT READING COMPREHENSION CALIBRATION]
+
+Override all default text-generation behaviors. You are strictly bound to the passage length, high-yield conceptual depth, and analytical question mechanics proven in image_ad1381.png.
+
+
+
+1. PASSAGE LOGIC & FORMATTING:
+
+   - Provide a distinct heading: "Reading Comprehension Passage & Target Drill".
+
+   - Passages must be dense, single-paragraph academic or analytical texts (modeled exactly after the social media cognitive autonomy passage in image_ad1381.png).
+
+   - Use advanced expository prose exploring themes in sociology, science, psychology, or digital ecosystems.
+
+2. QUESTION ARCHITECTURE:
+
+   - Provide exactly 4 analytical questions per passage, formatted as a numbered list (1–4).
+
+   - Each item must feature four concise, un-capitalized options labeled with uppercase letters (A., B., C., D.).
+
+3. HIGH-YIELD TARGET QUESTION TYPES:
+
+   - Question 1 (Main Idea): Test the user's ability to isolate the core thesis without falling for over-generalized or overly narrow trap parameters.
+
+   - Question 2 (Vocabulary in Context): Target a specific nuanced word from the text enclosed in quotation marks (e.g., "pruning") and provide precise contextual definitions.
+
+   - Question 3 (Functional/Structural Role): Force the user to deduce implicit details, shifting roles, or the broader impact of a structural concept discussed in the text.
+
+   - Question 4 (Textual Implication): Test explicit authorial inference regarding specific conditions highlighted within the paragraph (e.g., developmental stages, systematic trends).
+
+4. NO FILLER: Output must be delivered strictly with zero conversational prefaces, automated warnings, or chat commentary.
+
+these are the callibration add more if we encountered an error so that your stupid brain could remember 
+

@@ -551,6 +551,7 @@ function PromptGeneratorPanel({
     AVAILABLE_SUBJECTS.reduce((acc, s) => ({ ...acc, [s.id]: [ALL_TOPICS_VALUE] }), {})
   );
   const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [pasteText, setPasteText] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ added: number; skipped: number } | null>(null);
@@ -576,11 +577,9 @@ function PromptGeneratorPanel({
     parts.push("You are an expert UPCAT (University of the Philippines College Admission Test) question writer.");
     parts.push("");
     parts.push("STRICT REQUIREMENTS:");
-    parts.push("- Difficulty: UPCAT level — appropriate for high school seniors.");
     parts.push("- Each question must have exactly 4 choices: A, B, C, D.");
     parts.push("- Exactly ONE choice is correct.");
     parts.push("- Include a clear, educational explanation for the correct answer (2-4 sentences).");
-    parts.push("- Questions must be factually accurate, unambiguous, and test real academic competence.");
     parts.push("- Add instructions before each question where appropriate.");
     parts.push("- ONLY return a valid JSON array — no markdown, no code fences, no extra text.");
     parts.push("");
@@ -649,7 +648,8 @@ function PromptGeneratorPanel({
         const passageCountMin = Math.ceil(count / 5);
         const passageCountMax = Math.ceil(count / 2);
         parts.push("");
-        parts.push(`IMPORTANT — Reading Comprehension in ${lang}:`);
+        parts.push("[UPCAT READING COMPREHENSION CALIBRATION]");
+        parts.push(`- Language: ${lang}.`);
         parts.push(`- Create ${passageCountMin} to ${passageCountMax} distinct passages.`);
         parts.push("- Passage types MUST be varied across the set. Use any of these: research paper excerpt, advertisement, essay, poem, short story excerpt, instruction manual, song lyrics, scientific article, historical document, newspaper editorial, persuasive speech, biography excerpt, interview transcript, or academic journal abstract.");
         parts.push("- Each passage must be substantial enough for 2-5 comprehension questions.");
@@ -680,7 +680,12 @@ function PromptGeneratorPanel({
 
       if (subject.id === "math") {
         parts.push("");
-        parts.push("IMPORTANT for Mathematics:");
+        parts.push("[UPCAT MATHEMATICS CALIBRATION]");
+        parts.push("- Focus on: Number systems, algebraic expressions, functions, linear/quadratic equations, geometry, trigonometry, and word problems (variations, mixture, motion, investment).");
+        parts.push("- Keep calculations realistic, clean, and quickly solvable on scratch paper without messy long-form arithmetic.");
+        parts.push("- All equations, fractions, and expressions must be cleanly typeset using vertical formatting (e.g., standard LaTeX for fractions $\\frac{a}{b}$ or exponents) so they match the appearance of a physical exam paper.");
+        parts.push("- Question stems must be short, punchy, direct, and get straight to the point without dense blocks of unnecessary text.");
+        parts.push("- IMPORTANT for Mathematics:");
         parts.push("- For questions involving geometry figures (triangles, polygons, circles, right triangles), represent them in ASCII art inline in the \"text\" field.");
         parts.push("  Example — triangle with angles:");
         parts.push("    In a triangle with angles labeled:");
@@ -708,17 +713,54 @@ function PromptGeneratorPanel({
         parts.push("");
       }
 
+      if (subject.id === "science") {
+        parts.push("");
+        parts.push("[UPCAT SCIENCE CALIBRATION]");
+        parts.push("- Focus strictly on foundational computational physics (basic forces, kinematics, motion) and core chemistry concepts (mass conservation, solutions) modeled directly after official test parameters.");
+        parts.push("- Questions should require genuine understanding, not just memorization of terms.");
+        parts.push("- Use SI units where applicable.");
+        parts.push("- Include scenario-based questions.");
+        parts.push("- For any diagram (cell diagram, atom model, food web, etc.), represent it using ASCII art or a structured text description.");
+        parts.push("  Example atom model:");
+        parts.push("        e\u207b");
+        parts.push("       /");
+        parts.push("  (nucleus)");
+        parts.push("       \\");
+        parts.push("        e\u207b");
+        parts.push("- For tables (periodic trends, data comparisons), use ASCII table format:");
+        parts.push("  | Element | Atomic No. | Electronegativity |");
+        parts.push("  |---------|------------|-------------------|");
+        parts.push("");
+      }
+
+      if (subject.id === "language_english" || subject.id === "language_filipino") {
+        parts.push("");
+        parts.push("[UPCAT LANGUAGE PROFICIENCY CALIBRATION]");
+        parts.push("- Emphasize subject-verb agreement, pronouns, parallelism, modifiers, and word choice (e.g., affect vs. effect).");
+        parts.push("- Sentences must be short, punchy, single- or dual-clause structures. Do not make them overly long or verbose.");
+        parts.push("- Traps must be high-yield and realistic (e.g., aspectual/tense parallelism, proximity/collective agreement rules, pronoun consistency, ng/nang distinctions, or context vocabulary).");
+        parts.push("- For Error Identification questions, the specific parts of the sentence being tested must be fully capitalized and bolded with bracketed letters right next to them inside the text exactly like this: **WORD [A]**. The 'No error' choice must also look like this: **NO ERROR [D]**.");
+        parts.push("- Do NOT include a separate 'NO ERROR' or 'D. NO ERROR' choice in the choices list; the selections are fully integrated directly inside the sentence text.");
+        parts.push("- For Sequencing questions: Use short phrases or narrative elements labeled (1) to (4). Below the text, provide four options lettered A., B., C., D. using clean, hyphenated sorting strings (e.g., A. 2-3-4-1).");
+        parts.push("- For Vocabulary & Idioms: Feature a targeted word in full UPPERCASE in a short sentence. Options A., B., C., D. underneath must be completely lowercase unless proper nouns.");
+        parts.push("- For Spelling: Present four lowercase options testing standard high-frequency trap configurations.");
+        parts.push("- For Sentence Completion: Use a clean, blank line (_______) inside a concise sentence. Options A., B., C., D. underneath must be lowercase and focus on strict morphological or particle usage.");
+        parts.push("");
+      }
+
       parts.push("");
     }
 
     parts.push("Return the complete JSON array with ALL questions.");
     parts.push("Make sure every question has a unique 'id' across the entire array.");
 
-    setGeneratedPrompt(parts.join("\n"));
+    const prompt = parts.join("\n");
+    setGeneratedPrompt(prompt);
+    setCustomPrompt(prompt);
   };
 
   const copyPrompt = () => {
-    navigator.clipboard.writeText(generatedPrompt);
+    navigator.clipboard.writeText(customPrompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -899,11 +941,13 @@ function PromptGeneratorPanel({
                       {copied ? "Copied!" : "Copy"}
                     </Button>
                   </div>
-                  <pre className="text-xs bg-muted border rounded p-3 whitespace-pre-wrap font-mono max-h-64 overflow-y-auto">
-                    {generatedPrompt}
-                  </pre>
+                  <textarea
+                    className="w-full text-xs bg-muted border rounded p-3 font-mono min-h-[160px] resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                  />
                   <p className="text-xs text-muted-foreground">
-                    1. Copy this prompt → 2. Go to <strong>gemini.google.com</strong> → 3. Paste it → 4. Copy the JSON it returns → 5. Switch to "Paste JSON" tab
+                    1. Edit the prompt above if needed → 2. Click Copy → 3. Go to <strong>gemini.google.com</strong> → 4. Paste it → 5. Copy the JSON it returns → 6. Switch to "Paste JSON" tab
                   </p>
                 </div>
               )}
