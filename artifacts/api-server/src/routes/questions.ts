@@ -79,6 +79,7 @@ function buildPrompt(subject: string, count: number, topics: string[]): string {
 
 STRICT REQUIREMENTS:
 - Difficulty: UPCAT level — calibrated for a college entrance exam. Each question should be solvable by a well-prepared high school senior in 1-2 minutes. Avoid extremely complex multi-step problems or obscure trivia. Focus on clear, tested concepts that are standard UPCAT material.
+- Do not reuse or rephrase your questions — generate entirely new questions each time.
 - Each question must have exactly 4 choices: A, B, C, D.
 - Exactly ONE choice is correct.
 - Include a clear, educational explanation for the correct answer (2-4 sentences).
